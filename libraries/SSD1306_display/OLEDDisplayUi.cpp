@@ -139,11 +139,12 @@ void OLEDDisplayUi::runLoadingProcess(LoadingStage* stages, uint8_t stagesCount)
   this->loadingDrawFunction(this->display, &stages[stagesCount-1], progress);
   display->display();
 
-  #ifdef ARDUINO_ESP32_DEV
-  vTaskDelay( 150 / portTICK_PERIOD_MS);
-#else
-  delay(150);
-#endif
+    delay(150);
+  // #ifdef ARDUINO_ESP32_DEV
+  // vTaskDelay( 150 / portTICK_PERIOD_MS);
+// #else
+  // delay(150);
+// #endif
 }
 
 // -/----- Manuel control -----\-

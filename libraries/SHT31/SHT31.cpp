@@ -50,20 +50,22 @@ uint16_t SHT31::readStatus(void)
 
 void SHT31::reset(void) {
   writeCommand(SHT31_SOFTRESET);
-  	  #ifdef ARDUINO_ESP32_DEV
-  vTaskDelay( 10 / portTICK_PERIOD_MS);
-#else
   delay(10);
-#endif
+  	  // #ifdef ARDUINO_ESP32_DEV
+  // vTaskDelay( 10 / portTICK_PERIOD_MS);
+// #else
+  // delay(10);
+// #endif
 }
 
 void SHT31::clearStatus(void) {
   writeCommand(SHT31_CLEARSTATUS);
-  	  #ifdef ARDUINO_ESP32_DEV
-  vTaskDelay( 10 / portTICK_PERIOD_MS);
-#else
   delay(10);
-#endif
+  	  // #ifdef ARDUINO_ESP32_DEV
+  // vTaskDelay( 10 / portTICK_PERIOD_MS);
+// #else
+  // delay(10);
+// #endif
 }
 
 void SHT31::heater(boolean h) {
@@ -92,11 +94,12 @@ boolean SHT31::readTempHum(void) {
   uint8_t readbuffer[6];
 
   writeCommand(SHT31_MEAS_HIGHREP);
-  	  #ifdef ARDUINO_ESP32_DEV
-  vTaskDelay( 500 / portTICK_PERIOD_MS);
-#else
   delay(500);
-#endif
+  	  // #ifdef ARDUINO_ESP32_DEV
+  // vTaskDelay( 500 / portTICK_PERIOD_MS);
+// #else
+  // delay(500);
+// #endif
   Wire.requestFrom(_i2caddr, (uint8_t)6);
   if (Wire.available() != 6) 
     return false;
@@ -174,11 +177,12 @@ boolean SHT31::readSerialNo(uint32_t &serialNo)
   uint8_t buf[6];
 
  writeCommand(SHT31_READ_SERIALNO);
- 	  #ifdef ARDUINO_ESP32_DEV
-  vTaskDelay( 500 / portTICK_PERIOD_MS);
-#else
-  delay(500);
-#endif
+ delay(500);
+ 	  // #ifdef ARDUINO_ESP32_DEV
+  // vTaskDelay( 500 / portTICK_PERIOD_MS);
+// #else
+  // delay(500);
+// #endif
 
   Wire.requestFrom(_i2caddr, (uint8_t)6);
 

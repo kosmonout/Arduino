@@ -39,13 +39,15 @@ portMUX_TYPE InteruptMux = portMUX_INITIALIZER_UNLOCKED;
 #define MQTT_KEY        "QQiE_DzdaWEu"
 
 #define MAXIMUM_MINUTE_LOOP 30
-#define GEIGER_COUNT_STARTS_MINUTE 0
+#define GEIGER_COUNT_STARTS_MINUTE 3
 #define GEIGER_SAMPLE_MINUTES 2
-#define AIR_QUALITY_COUNT_STARTS_MINUTE 3
-#define AIR_QUALITY_SAMPLE_MINUTES 2
+#define AIR_QUALITY_COUNT_STARTS_MINUTE 0
+#define AIR_QUALITY_SAMPLE_MINUTES 1
 #define CPM_TO_USV_HOUR 0.0064648101265823
 #define WIND_ALARM 20 // 
 #define COUT_WIND_ALARM 50
+#define AIR_QUALITY_ERROR_COUNT 10
+#define AIR_SAMPLE_TIME_START_AFTER_SECONDS 30
 
 #include <ArduinoJson.h>
 #include "SSD1306.h"
@@ -64,13 +66,13 @@ portMUX_TYPE InteruptMux = portMUX_INITIALIZER_UNLOCKED;
 //#define BLYNK_DARK_BLUE "#5F7CD8"
 //#include <BlynkSimpleEsp8266.h>
 //Inputs
-#define PIN_SDA 21
-#define PIN_SCL 22
-#define SERIAL1_RXPIN 12
-#define SERIAL1_TXPIN 13
-#define PIN_HEATERON 16
-#define PIN_POWERWIND 14
-#define PIN_GEIGER_TRIGGERED 19
+#define PIN_SDA 18
+#define PIN_SCL 19
+#define SERIAL1_RXPIN 16
+#define SERIAL1_TXPIN 17
+#define PIN_HEATERON 33
+#define PIN_POWERWIND 32
+#define PIN_GEIGER_TRIGGERED 21
 #define PIN_GEIGER_ON 2
 #define PIN_AIR_QUALITY_ON 4
 
@@ -125,8 +127,8 @@ void UpdateSensors();
 void ClearJSON();
 void UpdateMQTT();
 bool checkMQTT();
-void ExecuteCore0(void * parameter);
-void ExecuteCore1(void * parameter);
+void CoreI2C(void * parameter);
+void CoreWiFi(void * parameter);
 void MinuteTimer();
 void ISR_geiger();
 void CheckMQTTTimer();
@@ -171,6 +173,7 @@ int iMQTTUpdateScreen = 1;
 int iWindAngle = 0;
 boolean bWAlarm = false;
 String sJSONsendCommand;
+String sRebootMessage;
 bool bUpdateDisplayTimer = false;
 bool bUpdateSensorsTimer = false;
 bool bCheckMQTTTimer = false;
@@ -180,52 +183,62 @@ String sWiFiIP;
 double dUsvHour;
 float fPm2_5, fPm10;
 int iMinuteCountDebug = 0;
+int iHourCountDebug = 0;
 bool bMinuteTimer = true;
 int iMinuteCount = 0;
 int iCountHTTPInterval = 0;
 bool bAirQualitySampleStart = false;
+int iAirReadErrorCount;
+unsigned long ulAirQualStartSampleTimeSeconds  ;
 
 TaskHandle_t Task1, Task2;
 
 ////////////////////////////////////////
+
+//extern "C" void app_main()
 void setup(void)
 {
   xTaskCreatePinnedToCore
   (
-    ExecuteCore0, /* Task function. */
-    "ExecuteCore0", /* name of task. */
-    1024 * 8, /* Stack size of task */
+    CoreWiFi, /* Task function. */
+    "CoreWiFi", /* name of task. */
+    12 * 1024, /* Stack size of task */
     NULL, /* parameter of the task */
     1, /* priority of the task */
     NULL, /* Task handle to keep track of created task */
-    0); /* pin task to core 0 */
+    0 /* pin task to core */
+  );
 
-  vTaskDelay( 2000 / portTICK_PERIOD_MS);
+  delay(2000);
 
   xTaskCreatePinnedToCore
   (
-    ExecuteCore1, /* Task function. */
-    "ExecuteCore1", /* name of task. */
-    1024 * 8, /* Stack size of task */
+    CoreI2C, /* Task function. */
+    "CoreI2C", /* name of task. */
+    8 * 1024, /* Stack size of task */
     NULL, /* parameter of the task */
     1, /* priority of the task */
     NULL, /* Task handle to keep track of created task */
-    1); /* pin task to core 0 */
-}
+    1 /* pin task to core  */
+  );
 
+}
 ////////////////////////////////////////////////////////////////////////////////
+
 void loop(void)
 {
-
 }
+
 
 //#####################################################################################################
 
-void  ExecuteCore1(void * parameter )
+void  CoreI2C(void * parameter )
 {
   Wire.begin(PIN_SDA, PIN_SCL); // the SDA and SCL
   Wire.setClock(400000);
   Serial1.begin(9600, SERIAL_8N1, SERIAL1_RXPIN, SERIAL1_TXPIN);
+  //Air Quality in sleep mode
+  my_sds.sleep();
   Serial.begin(115200);
   pinMode(PIN_HEATERON, OUTPUT);
   pinMode(PIN_GEIGER_ON, OUTPUT);
@@ -235,6 +248,15 @@ void  ExecuteCore1(void * parameter )
   digitalWrite(PIN_POWERWIND, LOW);
   digitalWrite(PIN_GEIGER_ON, LOW);
   digitalWrite(PIN_AIR_QUALITY_ON, LOW);
+  //Reboot when the i2c communication for the display is not started
+
+  Wire.beginTransmission(ADDR_SSD1306);
+  if (Wire.endTransmission(true) != 0)  // Device ACK'd
+  {
+    Serial.println("i2C communication failed... Rebooting..");
+    ESP.restart();
+  }
+  //
   display.init();
   display.setContrast(255);
   display.flipScreenVertically();
@@ -242,6 +264,7 @@ void  ExecuteCore1(void * parameter )
   display.setTextAlignment(TEXT_ALIGN_LEFT);
   display.drawStringMaxWidth(0, 0, 128, "Booting.....");
   display.display();
+
   iRainLevel = 0;
 
   sht31.begin(ADDR_SHT31);
@@ -275,8 +298,7 @@ void  ExecuteCore1(void * parameter )
   }
   display.display();
   Wire.beginTransmission(ADDR_ADS1115);
-  uint8_t ec = Wire.endTransmission(true); // if device exists on bus, it will aCK
-  if (ec != 0)  // Device ACK'd
+  if (Wire.endTransmission(true) != 0)  // Device ACK'd
   {
     display.drawStringMaxWidth(0, 40, 128, "NOT found AD conv");
   }
@@ -331,6 +353,10 @@ void  ExecuteCore1(void * parameter )
   UpdateSensors();
   //LOOP FUNCTION *****************************************************************
   for (;;) {
+
+    //Reboot when the i2c communication get lost....
+
+
     DisplayStatus();
     // String taskMessage = "loop running on core ";
     //  taskMessage = taskMessage + xPortGetCoreID();
@@ -357,19 +383,30 @@ void  ExecuteCore1(void * parameter )
       timerStart(timerDispl);
       timerStart(timerSensors);
     }
-
     if (bAirQualitySampleStart == true)
     {
-      int error;
-      error = my_sds.read(&fPm2_5, &fPm10);
-      if (! error)
+      if ((millis() / 1000) > (ulAirQualStartSampleTimeSeconds   + AIR_SAMPLE_TIME_START_AFTER_SECONDS))
       {
-        bAirQualitySampleStart == true;
-      }
-      else
-      {
-        fPm2_5 = -999;
-        fPm10 = -999;
+        int error;
+        error = my_sds.read(&fPm2_5, &fPm10);
+        if (! error)
+        {
+         // Serial.println("AIR QUALITY sample");
+          iAirReadErrorCount = 0;
+          bAirQualitySampleStart == false;
+        }
+        else
+        {
+          iAirReadErrorCount++;
+          if (iAirReadErrorCount > AIR_QUALITY_ERROR_COUNT)
+          {
+           // Serial.println("AIR QUALITY error");
+            fPm2_5 = -999;
+            fPm10 = -999;
+            iAirReadErrorCount = 0;
+            bAirQualitySampleStart == false;
+          }
+        }
       }
     }
 
@@ -380,11 +417,13 @@ void  ExecuteCore1(void * parameter )
       //GEIGER COUNT STARTS
       if (iMinuteCount == GEIGER_COUNT_STARTS_MINUTE)
       {
+        //Serial.println("Geiger starts");
         digitalWrite(PIN_GEIGER_ON, HIGH);
         iRadiationCount = 0;
       }
-      else if (iMinuteCount >= (GEIGER_COUNT_STARTS_MINUTE + GEIGER_SAMPLE_MINUTES))
+      else if (iMinuteCount == (GEIGER_COUNT_STARTS_MINUTE + GEIGER_SAMPLE_MINUTES))
       {
+       // Serial.println("Geiger stops");
         digitalWrite(PIN_GEIGER_ON, LOW);
         //0.2 samples per second self inducted false reading
         if (iRadiationCount > 0)
@@ -402,56 +441,76 @@ void  ExecuteCore1(void * parameter )
       //AIR QUALITY COUNT STARTS
       if (iMinuteCount == AIR_QUALITY_COUNT_STARTS_MINUTE)
       {
+        //Serial.println("AIR QUALITY starts");
         digitalWrite(PIN_AIR_QUALITY_ON, HIGH);
         bAirQualitySampleStart = true;
+        my_sds.wakeup();
+        ulAirQualStartSampleTimeSeconds   = millis() / 1000;
       }
-      else if (iMinuteCount >= (AIR_QUALITY_COUNT_STARTS_MINUTE + AIR_QUALITY_SAMPLE_MINUTES))
+      else if (iMinuteCount == (AIR_QUALITY_COUNT_STARTS_MINUTE + AIR_QUALITY_SAMPLE_MINUTES))
       {
+        //Serial.println("AIR QUALITY stops");
+        my_sds.sleep();
         digitalWrite(PIN_AIR_QUALITY_ON, LOW);
         bAirQualitySampleStart = false;
       }
-      Serial.println("iMinuteCount");
-      Serial.println(iMinuteCount);
-      Serial.println("iRadiationTotal");
-      Serial.println(iRadiationTotal);
+      //Serial.println("iMinuteCount");
+      //Serial.println(iMinuteCount);
+      //Serial.println("iRadiationTotal");
+      //Serial.println(iRadiationTotal);
       //timerRestart(timerMinute);
     }
   }
 }
 
-void  ExecuteCore0(void * parameter )
+void  CoreWiFi(void * parameter )
 {
-  WiFi.disconnect();
+  WiFi.setAutoReconnect(true);
   WiFi.begin(SSID, PASSWORD);
+  WiFi.waitForConnectResult();
   sWiFiIP = WiFi.localIP().toString();
   MQTTclient.setServer(MQTT_SERVER, MQTT_PORT);
+  int iTimeToReboot = 20;
   //Blynk.config(BLYNK_AUTH);
   // Blynk.connect(10);
-  bWIFIconnected = false;
-
   //LOOP FUNCTION *****************************************************************
-  for (;;) {
+  for (;;)
+  {
     //    String taskMessage = "HTTPClient on core ";
     //    taskMessage = taskMessage + xPortGetCoreID();
     //    Serial.println(taskMessage);
     // Check if module is still connected to WiFi.
-    if (WiFi.status() != WL_CONNECTED)
+    if (!WiFi.isConnected())
     {
+      sRebootMessage = "Reset in " + String(iTimeToReboot) + "  seconds";
+      iTimeToReboot--;
+      //Serial.println("Disconnected");
       if (bWIFIconnected == true)
       {
         server.close();
       }
+      WiFi.disconnect(true);
+      WiFi.begin(SSID, PASSWORD);
       bWIFIconnected = false;
       bMQTT_connected = false;
       bClientConnected = false;
+      if (iTimeToReboot <= 0)
+      {
+        iTimeToReboot = 0;
+        Serial.println("Network communication failed... Rebooting..");
+        ESP.restart();
+      }
     }
     else
     {
+      //Serial.println("Connected");
+      if (bWIFIconnected == false)
+      {
+        server.begin();
+      }
       bWIFIconnected = true;
       iWiFiStrength = WiFi.RSSI();
-      server.begin();
       sWiFiIP = WiFi.localIP().toString();
-      bWIFIconnected = true;
       if (iCountHTTPInterval == 10)
       {
         GetRequest();
@@ -524,6 +583,16 @@ void IRAM_ATTR MinuteTimer()
   bMinuteTimer = true;
   iMinuteCount++;
   iMinuteCountDebug++;
+  if (iMinuteCountDebug > 59)
+  {
+    iMinuteCountDebug = 0;
+    iHourCountDebug++;
+  }
+  // Reset after one year of operational time
+  if (iHourCountDebug >8759)
+  {
+    iHourCountDebug=0;
+  }
   portEXIT_CRITICAL_ISR(&timerMuxMinute);
 }
 
@@ -543,14 +612,10 @@ void  UpdateDisplay()
 
 void UpdateSensors()
 {
-  //vTaskSuspend(timerDispl);
-  // vTaskSuspend(timerMinute);
-  // vTaskSuspend(timerSensors);
   digitalWrite(PIN_POWERWIND, HIGH);
-
   dTemperature = sht31.readTemperature() + TEMPERATURE_CAL;
-  Serial.println("readTemperature");
-  Serial.println(String(dTemperature));
+  //Serial.println("readTemperature");
+  //Serial.println(String(dTemperature));
   if (dTemperature < -40 || dTemperature > 125 )
   {
     bTemperatureAvail = false;
@@ -580,9 +645,8 @@ void UpdateSensors()
     digitalWrite(PIN_HEATERON, LOW);
     bHeaterRain = false;
   }
-
   dPressure = bmp.readPressure() / 100;
-  Serial.println(String(dPressure));
+  //Serial.println(String(dPressure));
   if (dPressure >= 1200 || dPressure <= 900)
   {
     bPressureAvail = false;
@@ -896,7 +960,7 @@ void UpdateMQTT()
       }
       break;
     case 11:
-      if (iRadiationTotal  >= 0)
+      if (fPm2_5  > 0)
       {
         MQTTclient.publish("PM2_5", String(fPm2_5).c_str());
       }
@@ -906,7 +970,7 @@ void UpdateMQTT()
       }
       break;
     case 12:
-      if (iRadiationTotal  >= 0)
+      if (fPm10  > 0)
       {
         MQTTclient.publish("PM10", String(fPm10).c_str());
       }
@@ -925,6 +989,11 @@ void  DisplayStatus() {
   // vTaskSuspend(timerMinute);
   // vTaskSuspend(timerSensors);
   //Remove screen update
+  Wire.beginTransmission(ADDR_SSD1306);
+  if (Wire.endTransmission(true) != 0)  // Device ACK'd
+  {
+    ESP.restart();
+  }
   display.clear();
   display.setFont(ArialMT_Plain_10);
   display.setTextAlignment(TEXT_ALIGN_LEFT);
@@ -965,15 +1034,22 @@ void  DisplayStatus() {
       display.drawString(128, 11, "clnt DIS");
       display.setTextAlignment(TEXT_ALIGN_LEFT);
     }
-    //Debug Minute
-    display.setTextAlignment(TEXT_ALIGN_CENTER);
-    display.drawString(64, 11, String(iMinuteCountDebug));
-    display.setTextAlignment(TEXT_ALIGN_LEFT);
   }
   else
   {
     display.drawString(0, 0,  "DISCONNECTED");
   }
+  //Debug Minute
+  if (sRebootMessage != "")
+  {
+    display.drawString(0, 11, sRebootMessage);
+  }
+  else
+  {
+    display.setTextAlignment(TEXT_ALIGN_CENTER);
+    display.drawString(64, 11, String(iHourCountDebug));
+  }
+  display.setTextAlignment(TEXT_ALIGN_LEFT);
   display.drawLine(63, 23, 63, 64);
   display.drawLine(0, 23, 128, 23);
   display.setTextAlignment(TEXT_ALIGN_CENTER);
@@ -1189,7 +1265,7 @@ void  DisplayStatus() {
     case 6 :
       display.drawString(31, 30, "PM2.5 [μg/m3]");
       display.drawString(95, 30, "PM10 [μg/m3]");
-      if (iRadiationTotal >= 0)
+      if (fPm2_5 > 0)
       {
         display.drawString(31, 47, String(fPm2_5));
       }
@@ -1197,7 +1273,7 @@ void  DisplayStatus() {
       {
         display.drawString(31, 47, "ERROR");
       }
-      if (iRadiationTotal  >= 0)
+      if (fPm10  > 0)
       {
         display.drawString(95, 47, String(fPm10));
       }
@@ -1209,10 +1285,6 @@ void  DisplayStatus() {
   }
   display.display();
   display.setTextAlignment(TEXT_ALIGN_LEFT);
-  //Activiate screen update
-  // vTaskResume(timerDispl);
-  // vTaskResume(timerMinute);
-  // vTaskResume(timerSensors);
 }
 
 int GetRequest()
@@ -1322,22 +1394,8 @@ JsonObject& prepareResponse(JsonBuffer & jsonBuffer)
   {
     root["dRad_usv"] = String(-999);
   }
-  if (iRadiationTotal  >= 0)
-  {
-    root["fPM2_5"] = String(fPm2_5);
-  }
-  else
-  {
-    root["fPM2_5"] = String(-999);
-  }
-  if (iRadiationTotal >= 0)
-  {
-    root["fPM10"] = String(fPm10);
-  }
-  else
-  {
-    root["fPM10"] = String(-999);
-  }
+  root["fPM2_5"] = String(fPm2_5);
+  root["fPM10"] = String(fPm10);
   return root;
 }
 

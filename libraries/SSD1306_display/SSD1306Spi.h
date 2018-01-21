@@ -60,17 +60,19 @@ class SSD1306Spi : public OLEDDisplay {
 
       // Pulse Reset low for 10ms
       digitalWrite(_rst, HIGH);
-      	  #ifdef ARDUINO_ESP32_DEV
-  vTaskDelay( 1 / portTICK_PERIOD_MS);
-#else
-  delay(1);
-#endif
+	  delay(1);
+      	  // #ifdef ARDUINO_ESP32_DEV
+  // vTaskDelay( 1 / portTICK_PERIOD_MS);
+// #else
+  // delay(1);
+// #endif
       digitalWrite(_rst, LOW);
-     	  #ifdef ARDUINO_ESP32_DEV
-  vTaskDelay( 10 / portTICK_PERIOD_MS);
-#else
-  delay(10);
-#endif 
+	  delay(10);
+     	  // #ifdef ARDUINO_ESP32_DEV
+  // vTaskDelay( 10 / portTICK_PERIOD_MS);
+// #else
+  // delay(10);
+// #endif 
       digitalWrite(_rst, HIGH);
       return true;
     }
