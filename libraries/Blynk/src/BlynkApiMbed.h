@@ -11,43 +11,8 @@
 #ifndef BlynkApiMbed_h
 #define BlynkApiMbed_h
 
-#include "mbed.h"
-
-static Timer  blynk_millis_timer;
-static Ticker blynk_waker;
-
-static
-void blynk_wake() {
-    //pc.puts("(...)");
-}
-
-static
-void delay(unsigned long ms)
-{
-    wait_ms(ms);
-}
-
-static
-unsigned long millis(void)
-{
-    return blynk_millis_timer.read_ms();
-}
-
 #include <Blynk/BlynkApi.h>
-
-template<class Proto>
-void BlynkApi<Proto>::Init()
-{
-    blynk_waker.attach(&blynk_wake, 2.0);
-    blynk_millis_timer.start();
-}
-
-template<class Proto>
-BLYNK_FORCE_INLINE
-millis_time_t BlynkApi<Proto>::getMillis()
-{
-    return blynk_millis_timer.read_ms();
-}
+#include <mbed.h>
 
 #ifdef BLYNK_NO_INFO
 
@@ -90,6 +55,18 @@ void BlynkApi<Proto>::sendInfo()
 
 #endif
 
+
+// Check if analog pins can be referenced by name on this device
+#if defined(analogInputToDigitalPin)
+    #define BLYNK_DECODE_PIN(it) (((it).asStr()[0] == 'A') ? analogInputToDigitalPin(atoi((it).asStr()+1)) : (it).asInt())
+#else
+    #define BLYNK_DECODE_PIN(it) ((it).asInt())
+
+    #if defined(BLYNK_DEBUG_ALL)
+        #pragma message "analogInputToDigitalPin not defined"
+    #endif
+#endif
+
 template<class Proto>
 BLYNK_FORCE_INLINE
 void BlynkApi<Proto>::processCmd(const void* buff, size_t len)
@@ -104,17 +81,7 @@ void BlynkApi<Proto>::processCmd(const void* buff, size_t len)
     if (++it >= param.end())
         return;
 
-#if defined(analogInputToDigitalPin)
-    // Good! Analog pins can be referenced on this device by name.
-    const uint8_t pin = (it.asStr()[0] == 'A') ?
-                         analogInputToDigitalPin(atoi(it.asStr()+1)) :
-                         it.asInt();
-#else
-    #if defined(BLYNK_DEBUG_ALL)
-        #pragma message "analogInputToDigitalPin not defined"
-    #endif
-    const uint8_t pin = it.asInt();
-#endif
+    uint8_t pin = BLYNK_DECODE_PIN(it);
 
     switch(cmd16) {
 
@@ -122,6 +89,7 @@ void BlynkApi<Proto>::processCmd(const void* buff, size_t len)
 
     case BLYNK_HW_PM: {
         while (it < param.end()) {
+            pin = BLYNK_DECODE_PIN(it);
             ++it;
             if (!strcmp(it.asStr(), "in")) {
                 //pinMode(pin, INPUT);

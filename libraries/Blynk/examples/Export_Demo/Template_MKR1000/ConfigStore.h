@@ -36,7 +36,7 @@ const ConfigStore configDefault = {
   "",
   
   "invalid token",
-  "blynk-cloud.com", 8442,
+  "blynk-cloud.com", 80,
   0
 };
 
@@ -45,6 +45,7 @@ FlashStorage(flash, ConfigStore);
 
 void config_load()
 {
+  memset(&configStore, 0, sizeof(configStore));
   configStore = flash.read();
   if (configStore.magic != configDefault.magic) {
     DEBUG_PRINT("Using default config.");
@@ -65,7 +66,7 @@ bool config_init()
   return true;
 }
 
-void config_reset()
+void enterResetConfig()
 {
   DEBUG_PRINT("Resetting configuration!");
   configStore = configDefault;

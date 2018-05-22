@@ -25,6 +25,7 @@
 #define BLYNK_NORETURN __attribute__ ((noreturn))
 #define BLYNK_UNUSED __attribute__((__unused__))
 #define BLYNK_DEPRECATED __attribute__ ((deprecated))
+#define BLYNK_CONSTRUCTOR __attribute__((constructor))
 
 // Causes problems on some platforms
 #define BLYNK_FORCE_INLINE inline //__attribute__((always_inline))
@@ -90,13 +91,13 @@
         #elif defined(ENERGIA_ARCH_TIVAC)
             #define BLYNK_INFO_DEVICE  "LaunchPad"
 
-        #elif defined(ENERGIA_ARCH_CC3200)
+        #elif defined(ENERGIA_ARCH_CC3200EMT) || defined(ENERGIA_ARCH_CC3200)
             #define BLYNK_INFO_CONNECTION  "CC3200"
             #define BLYNK_SEND_CHUNK 64
             #define BLYNK_BUFFERS_SIZE 1024
 
             #if   defined(ENERGIA_CC3200_LAUNCHXL) //TODO: This is a bug in Energia IDE
-            #define BLYNK_INFO_DEVICE  "CC32000 LaunchXL"
+            #define BLYNK_INFO_DEVICE  "CC3200 LaunchXL"
             #elif defined(ENERGIA_RedBearLab_CC3200)
             #define BLYNK_INFO_DEVICE  "RBL CC3200"
             #elif defined(ENERGIA_RedBearLab_WiFiMini)
@@ -104,6 +105,13 @@
             #elif defined(ENERGIA_RedBearLab_WiFiMicro)
             #define BLYNK_INFO_DEVICE  "RBL WiFi Micro"
             #endif
+        #elif defined(ENERGIA_ARCH_CC3220EMT) || defined(ENERGIA_ARCH_CC3220)
+            #define BLYNK_INFO_CONNECTION  "CC3220"
+            #define BLYNK_SEND_CHUNK 64
+            #define BLYNK_BUFFERS_SIZE 1024
+
+            #define BLYNK_INFO_DEVICE  "CC3220"
+            #define BLYNK_INFO_CPU     "CC3220"
         #endif
 
         #if !defined(BLYNK_INFO_DEVICE)
@@ -147,7 +155,7 @@
         #define BLYNK_INFO_DEVICE  "Particle"
         #endif
 
-    #elif defined(MBED_LIBRARY_VERSION)
+    #elif defined(__MBED__)
 
         #define BLYNK_INFO_DEVICE  "MBED"
         #define BLYNK_USE_128_VPINS
@@ -162,6 +170,23 @@
         #define BLYNK_INFO_DEVICE  "chipKIT Uno32"
         #else
         #define BLYNK_INFO_DEVICE  "chipKIT"
+        #endif
+
+    #elif defined(ARDUINO) && defined(ARDUINO_AMEBA)
+        #if defined(BOARD_RTL8710)
+        #define BLYNK_INFO_DEVICE  "RTL8710"
+        #define BLYNK_USE_128_VPINS
+        #define BLYNK_BUFFERS_SIZE 1024
+        #elif defined(BOARD_RTL8711AM)
+        #define BLYNK_INFO_DEVICE  "RTL8711AM"
+        #define BLYNK_USE_128_VPINS
+        #define BLYNK_BUFFERS_SIZE 1024
+        #elif defined(BOARD_RTL8195A)
+        #define BLYNK_INFO_DEVICE  "RTL8195A"
+        #define BLYNK_USE_128_VPINS
+        #define BLYNK_BUFFERS_SIZE 1024
+        #else
+        #define BLYNK_INFO_DEVICE  "Ameba"
         #endif
 
     #elif defined(ARDUINO) && defined(TEENSYDUINO)
