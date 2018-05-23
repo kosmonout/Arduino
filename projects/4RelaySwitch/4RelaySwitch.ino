@@ -100,7 +100,7 @@ void loop(void)
       {
         String line = client.readStringUntil('\r');
         //Read JSON
-        //Serial.println("line: " + line);
+        Serial.println("line: " + line);
         if (line.length() > 0)
         {
           // Parse JSON
