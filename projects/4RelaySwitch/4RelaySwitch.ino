@@ -10,7 +10,7 @@ const char* password = "funhouse";
 //RELAYS
 
 //d7
-const int Relay1Pin = 13;
+const int Relay1Pin = 15;
 //d3
 const int Relay2Pin = 0;
 //d2
@@ -18,7 +18,7 @@ const int Relay3Pin = 4;
 //d1
 const int Relay4Pin = 5;
 //d8
-const int LedOut  = 15;
+const int LedOut  = 13;
 
 
 const int ContactServerInterval_ms = 300000;
