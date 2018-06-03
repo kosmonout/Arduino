@@ -18,7 +18,7 @@ const int Relay3Pin = 4;
 //d1
 const int Relay4Pin = 5;
 //d8
-const int LedOut  = 15;
+const int LedOut  = 16;
 
 
 const int ContactServerInterval_ms = 300000;
@@ -43,7 +43,7 @@ void setup(void) {
 
   // Configure GPIO2 as OUTPUT.
   pinMode(LedOut, OUTPUT);
-  digitalWrite(LedOut, LOW);
+  digitalWrite(LedOut, HIGH);
   pinMode(Relay4Pin, OUTPUT);
   pinMode (Relay3Pin, OUTPUT);
   pinMode(Relay1Pin, OUTPUT);
@@ -70,7 +70,7 @@ void loop(void)
   // Check if module is still connected to WiFi.
   if (WiFi.status() != WL_CONNECTED)
   {
-    digitalWrite(Relay4Pin, LOW);
+    digitalWrite(LedOut, HIGH);
     if (WIFIconnected == true)
     {
       Serial.println("Wifi disconnected");
@@ -92,7 +92,6 @@ void loop(void)
 
     if (client)
     {
-      digitalWrite(LedOut, LOW);
       //Serial.println("Client.");
       bool success = readRequest(client);
 
@@ -119,40 +118,48 @@ void loop(void)
           String sParsedRelay1 = json_parsed["relay1"];
           if (sParsedRelay1 == "on")
           {
+            digitalWrite(LedOut, HIGH);
             digitalWrite(Relay1Pin, LOW);
             sJSONreceiveCommand = "Rcv: " + Relay1Pin;
           } else if (sParsedRelay1 == "off")
           {
+            digitalWrite(LedOut, HIGH);
             digitalWrite(Relay1Pin, HIGH);
             sJSONreceiveCommand = "Rcv: " + Relay1Pin;
           }
           String sParsedRelay2 = json_parsed["relay2"];
           if (sParsedRelay2 == "on")
           {
+            digitalWrite(LedOut, HIGH);
             digitalWrite(Relay2Pin, LOW);
             sJSONreceiveCommand = "Rcv: " + sParsedRelay2;
           } else if (sParsedRelay2 == "off")
           {
+            digitalWrite(LedOut, HIGH);
             digitalWrite(Relay2Pin, HIGH);
             sJSONreceiveCommand = "Rcv: " + sParsedRelay2;
           }
           String sParsedRelay3 = json_parsed["relay3"];
           if (sParsedRelay3 == "on")
           {
+            digitalWrite(LedOut, HIGH);
             digitalWrite(Relay3Pin, LOW);
             sJSONreceiveCommand = "Rcv: " + sParsedRelay3;
           } else if (sParsedRelay3 == "off")
           {
+            digitalWrite(LedOut, HIGH);
             digitalWrite(Relay3Pin, HIGH);
             sJSONreceiveCommand = "Rcv: " + sParsedRelay3;
           }
           String sParsedRelay4 = json_parsed["relay4"];
           if (sParsedRelay4 == "on")
           {
+            digitalWrite(LedOut, HIGH);
             digitalWrite(Relay4Pin, LOW);
             sJSONreceiveCommand = "Rcv: " + sParsedRelay4;
           } else if (sParsedRelay4 == "Off")
           {
+            digitalWrite(LedOut, HIGH);
             digitalWrite(Relay4Pin, HIGH);
             sJSONreceiveCommand = "Rcv: " + sParsedRelay4;
           }
@@ -162,9 +169,9 @@ void loop(void)
         JsonObject& jsonWrite = prepareResponse(jsonWriteBuffer);
         writeResponse(client, jsonWrite);
         ClientConnected = true;
-        delay(1);
-        digitalWrite(Relay4Pin, HIGH);
+        delay(100);
         client.stop();
+        digitalWrite(LedOut, LOW);
       }
     }
   }
