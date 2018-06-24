@@ -1,5 +1,5 @@
 // ArduinoJson - arduinojson.org
-// Copyright Benoit Blanchon 2014-2018
+// Copyright Benoit Blanchon 2014-2017
 // MIT License
 
 #pragma once
@@ -7,7 +7,7 @@
 #include "IsBaseOf.hpp"
 
 namespace ArduinoJson {
-namespace Internals {
+namespace TypeTraits {
 
 class JsonVariantTag {};
 
