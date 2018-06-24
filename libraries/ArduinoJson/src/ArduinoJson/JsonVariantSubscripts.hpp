@@ -1,5 +1,5 @@
 // ArduinoJson - arduinojson.org
-// Copyright Benoit Blanchon 2014-2018
+// Copyright Benoit Blanchon 2014-2017
 // MIT License
 
 #pragma once
@@ -10,7 +10,6 @@
 #include "TypeTraits/EnableIf.hpp"
 
 namespace ArduinoJson {
-namespace Internals {
 
 // Forward declarations.
 class JsonArraySubscript;
@@ -42,18 +41,19 @@ class JsonVariantSubscripts {
   // const JsonObjectSubscript operator[](TKey) const;
   // TKey = const std::string&, const String&
   template <typename TString>
-  FORCE_INLINE
-      typename EnableIf<StringTraits<TString>::has_equals,
-                        const JsonObjectSubscript<const TString &> >::type
-      operator[](const TString &key) const {
+  FORCE_INLINE typename TypeTraits::EnableIf<
+      Internals::StringTraits<TString>::has_equals,
+      const JsonObjectSubscript<const TString &> >::type
+  operator[](const TString &key) const {
     return impl()->template as<JsonObject>()[key];
   }
   //
   // const JsonObjectSubscript operator[](TKey) const;
   // TKey = const std::string&, const String&
   template <typename TString>
-  FORCE_INLINE typename EnableIf<StringTraits<TString>::has_equals,
-                                 JsonObjectSubscript<const TString &> >::type
+  FORCE_INLINE typename TypeTraits::EnableIf<
+      Internals::StringTraits<TString>::has_equals,
+      JsonObjectSubscript<const TString &> >::type
   operator[](const TString &key) {
     return impl()->template as<JsonObject>()[key];
   }
@@ -61,8 +61,9 @@ class JsonVariantSubscripts {
   // JsonObjectSubscript operator[](TKey);
   // TKey = const char*, const char[N], const FlashStringHelper*
   template <typename TString>
-  FORCE_INLINE typename EnableIf<StringTraits<const TString *>::has_equals,
-                                 JsonObjectSubscript<const TString *> >::type
+  FORCE_INLINE typename TypeTraits::EnableIf<
+      Internals::StringTraits<const TString *>::has_equals,
+      JsonObjectSubscript<const TString *> >::type
   operator[](const TString *key) {
     return impl()->template as<JsonObject>()[key];
   }
@@ -70,10 +71,10 @@ class JsonVariantSubscripts {
   // JsonObjectSubscript operator[](TKey);
   // TKey = const char*, const char[N], const FlashStringHelper*
   template <typename TString>
-  FORCE_INLINE
-      typename EnableIf<StringTraits<TString *>::has_equals,
-                        const JsonObjectSubscript<const TString *> >::type
-      operator[](const TString *key) const {
+  FORCE_INLINE typename TypeTraits::EnableIf<
+      Internals::StringTraits<TString *>::has_equals,
+      const JsonObjectSubscript<const TString *> >::type
+  operator[](const TString *key) const {
     return impl()->template as<JsonObject>()[key];
   }
 
@@ -82,5 +83,4 @@ class JsonVariantSubscripts {
     return static_cast<const TImpl *>(this);
   }
 };
-}
 }

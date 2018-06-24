@@ -1,5 +1,5 @@
 // ArduinoJson - arduinojson.org
-// Copyright Benoit Blanchon 2014-2018
+// Copyright Benoit Blanchon 2014-2017
 // MIT License
 
 #pragma once
@@ -7,7 +7,6 @@
 #include "JsonBufferBase.hpp"
 
 namespace ArduinoJson {
-namespace Internals {
 
 class StaticJsonBufferBase : public JsonBufferBase<StaticJsonBufferBase> {
  public:
@@ -91,7 +90,6 @@ class StaticJsonBufferBase : public JsonBufferBase<StaticJsonBufferBase> {
   size_t _capacity;
   size_t _size;
 };
-}
 
 #if defined(__clang__)
 #pragma clang diagnostic push
@@ -107,10 +105,9 @@ class StaticJsonBufferBase : public JsonBufferBase<StaticJsonBufferBase> {
 // The template paramenter CAPACITY specifies the capacity of the buffer in
 // bytes.
 template <size_t CAPACITY>
-class StaticJsonBuffer : public Internals::StaticJsonBufferBase {
+class StaticJsonBuffer : public StaticJsonBufferBase {
  public:
-  explicit StaticJsonBuffer()
-      : Internals::StaticJsonBufferBase(_buffer, CAPACITY) {}
+  explicit StaticJsonBuffer() : StaticJsonBufferBase(_buffer, CAPACITY) {}
 
  private:
   char _buffer[CAPACITY];

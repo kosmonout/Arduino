@@ -1,12 +1,10 @@
 // ArduinoJson - arduinojson.org
-// Copyright Benoit Blanchon 2014-2018
+// Copyright Benoit Blanchon 2014-2017
 // MIT License
 
 #include <ArduinoJson.h>
 #include <catch.hpp>
 #include <sstream>
-
-using namespace ArduinoJson::Internals;
 
 static bool isAligned(void* ptr) {
   const size_t mask = sizeof(void*) - 1;

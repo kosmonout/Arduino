@@ -1,11 +1,12 @@
 // ArduinoJson - arduinojson.org
-// Copyright Benoit Blanchon 2014-2018
+// Copyright Benoit Blanchon 2014-2017
 // MIT License
 
 #include <ArduinoJson.h>
 #include <catch.hpp>
+#include <sstream>
 
-using namespace ArduinoJson::Internals;
+using namespace ArduinoJson::TypeTraits;
 
 TEST_CASE("TypeTraits") {
   SECTION("IsBaseOf") {
@@ -30,8 +31,9 @@ TEST_CASE("TypeTraits") {
     REQUIRE(static_cast<bool>(IsVariant<JsonVariant>::value));
   }
 
-  SECTION("IsConst") {
-    REQUIRE_FALSE((IsConst<char>::value));
-    REQUIRE((IsConst<const char>::value));
+  SECTION("IsString") {
+    REQUIRE((IsString<const char*>::value));
+    REQUIRE((IsString<std::string>::value));
+    REQUIRE_FALSE((IsString<double>::value));
   }
 }
