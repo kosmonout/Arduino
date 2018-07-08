@@ -30,7 +30,7 @@ bool ClientConnected = false;
 
 WiFiClient client;
 WiFiServer server(port);
-HTTPClient http;
+
 
 void printWiFiStatus();
 TickerScheduler tsTimer(1);
@@ -42,7 +42,7 @@ void writeResponse(WiFiClient& client, JsonObject& json);
 ////////////////////////////////////////
 void setup(void) {
   pinMode(LedOut, OUTPUT);
-  digitalWrite(LedOut, LOW);
+  digitalWrite(LedOut, HIGH);
   pinMode(Relay4Pin, OUTPUT);
   pinMode (Relay3Pin, OUTPUT);
   pinMode(Relay1Pin, OUTPUT);
@@ -57,7 +57,7 @@ void setup(void) {
   WiFi.disconnect();
   WiFi.begin(ssid, password);
   WIFIconnected = false;
-  tsTimer.add(0, ContactServerInterval_ms, GetRequest, false);
+ tsTimer.add(0, ContactServerInterval_ms, GetRequest, false);
   // Start TCP server.
 }
 
@@ -65,7 +65,6 @@ void setup(void) {
 void loop(void)
 {
   tsTimer.update();
-  String sParsedJSON;
   // Check if module is still connected to WiFi.
   if (WiFi.status() != WL_CONNECTED)
   {
@@ -108,45 +107,48 @@ void loop(void)
           JsonObject& json_parsed = jsonReadBuffer.parseObject(jsonChar);
           if (!json_parsed.success())
           {
-            //Serial.println("parseObject() failed");
+           // Serial.println("parseObject() failed");
             return;
           }
           sJSONreceiveCommand = "Unrecognized command";
-          //json_parsed.prettyPrintTo(Serial);
-          String sParsedRelay1 = json_parsed["relay1"];
-          if (sParsedRelay1 == "on")
+         // json_parsed.prettyPrintTo(Serial);
+          if (json_parsed["relay1"] == F("on"))
           {
+            //digitalWrite(LedOut, HIGH);
             digitalWrite(Relay1Pin, LOW);
-          } else if (sParsedRelay1 == "off")
+          } else if(json_parsed["relay1"] == F("off"))
           {
+            //digitalWrite(LedOut, HIGH);
             digitalWrite(Relay1Pin, HIGH);
           }
-          String sParsedRelay2 = json_parsed["relay2"];
-          if (sParsedRelay2 == "on")
+          if (json_parsed["relay2"] == F("on"))
           {
+            //digitalWrite(LedOut, HIGH);
             digitalWrite(Relay2Pin, LOW);
-          } else if (sParsedRelay2 == "off")
+          } else if (json_parsed["relay2"] == F("off"))
           {
+            //digitalWrite(LedOut, HIGH);
             digitalWrite(Relay2Pin, HIGH);
           }
-          String sParsedRelay3 = json_parsed["relay3"];
-          if (sParsedRelay3 == "on")
+          if (json_parsed["relay3"] == F("on"))
           {
+            //digitalWrite(LedOut, HIGH);
             digitalWrite(Relay3Pin, LOW);
-          } else if (sParsedRelay3 == "off")
+          } else if (json_parsed["relay3"] == F("off"))
           {
+            //digitalWrite(LedOut, HIGH);
             digitalWrite(Relay3Pin, HIGH);
           }
-         String sParsedRelay4 = json_parsed["relay4"];
-          if (sParsedRelay4 == "on")
+             if (json_parsed["relay4"] == F("on"))
           {
+            //digitalWrite(LedOut, HIGH);
             digitalWrite(Relay4Pin, LOW);
-          } else if (sParsedRelay4 == "off")
+          } else if (json_parsed["relay4"] == F("off"))
           {
+            //digitalWrite(LedOut, HIGH);
             digitalWrite(Relay4Pin, HIGH);
           }
         }
-        //Serial.println("Rcv: " + sParsedRelay);
         StaticJsonBuffer<200> jsonWriteBuffer;
         JsonObject& jsonWrite = prepareResponse(jsonWriteBuffer);
         writeResponse(client, jsonWrite);
@@ -161,6 +163,7 @@ void loop(void)
 
 int GetRequest()
 {
+  HTTPClient http;
   sJSONsendCommand = "Snd: GET";
   http.begin(INCOMMING_SERVER);
   int httpCode = http.GET();
@@ -172,41 +175,51 @@ int GetRequest()
 JsonObject& prepareResponse(JsonBuffer & jsonBuffer)
 {
   JsonObject& root = jsonBuffer.createObject();
-  root["hoer"] = "on";
-//  if (Relay1Pin == HIGH)
-//  {
-//    root["relay1"] = "on";
-//  }
-//  else
-//  {
-//    root["relay1"] = "off";
-//  }
-//  if (Relay2Pin == HIGH)
-//  {
-//    root["relay2"] = "on";
-//  }
-//  else
-//  {
-//    root["relay2"] = "off";
-//  }
-//  if (Relay3Pin == HIGH)
-//  {
-//    root["relay3"] = "on";
-//  }
-//  else
-//  {
-//    root["relay3"] = "off";
-//  }
-//  if (Relay4Pin == HIGH)
-//  {
-//    root["relay4"] = "on";
-//  }
-//  else
-//  {
-//    root["relay4"] = "off";
-//  }
-//  //Serial.println(sJSONsendCommand);
-//  return root;
+  if (digitalRead(Relay1Pin) == LOW)
+  {
+    root["relay1"] = "on";
+    //Serial.println("relay1:on");
+  }
+  else
+  {
+    root["relay1"] = "off";
+    //Serial.println("relay1:off");
+  }
+  if (digitalRead(Relay2Pin) == LOW)
+  {
+    root["relay2"] = "on";
+    //Serial.println("relay2:on");
+  }
+  else
+  {
+    root["relay2"] = "off";
+    //Serial.println("relay2:off");
+  }
+  if (digitalRead(Relay3Pin) == LOW)
+  {
+    root["relay3"] = "on";
+    //Serial.println("relay3:on");
+  }
+  else
+  {
+    root["relay3"] = "off";
+    //Serial.println("relay3:off");
+  }
+  if (digitalRead(Relay4Pin) == LOW)
+  {
+    root["relay4"] = "on";
+    //Serial.println("relay4:on");
+  }
+  else
+  {
+    root["relay4"] = "off";
+    //Serial.println("relay4:off");
+  }
+  //Serial.println(sJSONsendCommand);
+  return root;
+ //Serial.println(sJSONsendCommand);
+return root;
+>>>>>>> cfc46a714d716cd53ced34c8b95095bbfd1ec736
 }
 
 void writeResponse(WiFiClient & client, JsonObject & json) {
