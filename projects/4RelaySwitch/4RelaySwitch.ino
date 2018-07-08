@@ -57,7 +57,11 @@ void setup(void) {
   WiFi.disconnect();
   WiFi.begin(ssid, password);
   WIFIconnected = false;
+<<<<<<< HEAD
  tsTimer.add(0, ContactServerInterval_ms, GetRequest, false);
+=======
+  //tsTimer.add(0, ContactServerInterval_ms, GetRequest, false);
+>>>>>>> cfc46a714d716cd53ced34c8b95095bbfd1ec736
   // Start TCP server.
 }
 
@@ -87,7 +91,7 @@ void loop(void)
       //printWiFiStatus();
     }
     WiFiClient client = server.available();
-    client.setNoDelay(false);
+   // client.setNoDelay(false);
     if (client)
     {
       digitalWrite(LedOut, HIGH);
@@ -103,7 +107,8 @@ void loop(void)
           int size = line.length() + 1;
           char jsonChar[size];
           line.toCharArray(jsonChar, size);
-          StaticJsonBuffer<200> jsonReadBuffer;
+          DynamicJsonBuffer jsonReadBuffer;
+         // StaticJsonBuffer<2000> jsonReadBuffer;
           JsonObject& json_parsed = jsonReadBuffer.parseObject(jsonChar);
           if (!json_parsed.success())
           {
@@ -111,7 +116,10 @@ void loop(void)
             return;
           }
           sJSONreceiveCommand = "Unrecognized command";
+<<<<<<< HEAD
          // json_parsed.prettyPrintTo(Serial);
+=======
+>>>>>>> cfc46a714d716cd53ced34c8b95095bbfd1ec736
           if (json_parsed["relay1"] == F("on"))
           {
             //digitalWrite(LedOut, HIGH);
@@ -149,7 +157,12 @@ void loop(void)
             digitalWrite(Relay4Pin, HIGH);
           }
         }
+<<<<<<< HEAD
         StaticJsonBuffer<200> jsonWriteBuffer;
+=======
+        //StaticJsonBuffer<2000> jsonWriteBuffer;
+        DynamicJsonBuffer jsonWriteBuffer;
+>>>>>>> cfc46a714d716cd53ced34c8b95095bbfd1ec736
         JsonObject& jsonWrite = prepareResponse(jsonWriteBuffer);
         writeResponse(client, jsonWrite);
         ClientConnected = true;
@@ -175,6 +188,7 @@ int GetRequest()
 JsonObject& prepareResponse(JsonBuffer & jsonBuffer)
 {
   JsonObject& root = jsonBuffer.createObject();
+<<<<<<< HEAD
   if (digitalRead(Relay1Pin) == LOW)
   {
     root["relay1"] = "on";
@@ -218,6 +232,43 @@ JsonObject& prepareResponse(JsonBuffer & jsonBuffer)
   //Serial.println(sJSONsendCommand);
   return root;
  //Serial.println(sJSONsendCommand);
+return root;
+>>>>>>> cfc46a714d716cd53ced34c8b95095bbfd1ec736
+=======
+  root["hoer"] = "on";
+//  if (Relay1Pin == HIGH)
+//  {
+//    root["relay1"] = "on";
+//  }
+//  else
+//  {
+//    root["relay1"] = "off";
+//  }
+//  if (Relay2Pin == HIGH)
+//  {
+//    root["relay2"] = "on";
+//  }
+//  else
+//  {
+//    root["relay2"] = "off";
+//  }
+//  if (Relay3Pin == HIGH)
+//  {
+//    root["relay3"] = "on";
+//  }
+//  else
+//  {
+//    root["relay3"] = "off";
+//  }
+//  if (Relay4Pin == HIGH)
+//  {
+//    root["relay4"] = "on";
+//  }
+//  else
+//  {
+//    root["relay4"] = "off";
+//  }
+//  //Serial.println(sJSONsendCommand);
 return root;
 >>>>>>> cfc46a714d716cd53ced34c8b95095bbfd1ec736
 }
