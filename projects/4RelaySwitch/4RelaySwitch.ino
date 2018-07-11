@@ -69,10 +69,10 @@ void loop(void)
   // Check if module is still connected to WiFi.
   if (WiFi.status() != WL_CONNECTED)
   {
+    digitalWrite(LedOut, HIGH);
     if (WIFIconnected == true)
     {
       Serial.println("Wifi disconnected");
-      digitalWrite(LedOut, LOW);
       server.close();
       tsTimer.remove(0);
     }
@@ -83,7 +83,7 @@ void loop(void)
     // Print the new IP to Serial.
     if (WIFIconnected == false)
     {
-      digitalWrite(LedOut, HIGH);
+      digitalWrite(LedOut, LOW);
       server.begin();
       WIFIconnected = true;
       GetRequest();
