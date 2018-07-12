@@ -28,7 +28,7 @@ bool WIFIconnected = false;
 
 WiFiClient client;
 WiFiServer server(port);
-
+  HTTPClient http;
 void printWiFiStatus();
 TickerScheduler tsTimer(1);
 bool readRequest(WiFiClient& client);
@@ -159,7 +159,6 @@ void loop(void)
 
 int GetRequest()
 {
-  HTTPClient http;
   tsTimer.remove(0);
   sJSONsendCommand = "Snd: GET";
   http.begin(INCOMMING_SERVER);
