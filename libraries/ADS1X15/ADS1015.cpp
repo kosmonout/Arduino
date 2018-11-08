@@ -18,11 +18,6 @@
     v1.0 - First release
 */
 /**************************************************************************/
-#ifdef ARDUINO_ESP32_DEV
-#include <WiFi.h>
-#else
-#include <ESP8266WiFi.h>
-#endif
 
 
 #include <Wire.h>

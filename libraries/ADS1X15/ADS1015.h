@@ -17,13 +17,7 @@
     v1.1  - Added ADS1115 support - W. Earl
 */
 /**************************************************************************/
-#ifdef ARDUINO_ESP32_DEV
-#include <WiFi.h>
-#else
-#include <ESP8266WiFi.h>
-#endif
 
-#include <Wire.h>
 
 /*=========================================================================
     I2C ADDRESS/BITS

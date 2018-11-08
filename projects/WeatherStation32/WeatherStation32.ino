@@ -1,10 +1,13 @@
-#ifdef ARDUINO_ESP32_DEV
 #include <WiFi.h>
 #include <HTTPClient.h>
-#else
-#include <ESP8266WiFi.h>
-#include <ESP8266HTTPClient.h>
-#endif
+#include <ArduinoJson.h>
+#include "SSD1306.h"
+#include "BMP280.h"
+#include "SHT31.h"
+#include "MAX44009.h"
+#include "ADS1015.h"
+#include <SDS011.h>
+#include <PubSubClient.h>
 
 /* create a hardware timer */
 hw_timer_t * timerDispl = NULL;
@@ -49,14 +52,7 @@ portMUX_TYPE InteruptMux = portMUX_INITIALIZER_UNLOCKED;
 #define AIR_QUALITY_ERROR_COUNT 10
 #define AIR_SAMPLE_TIME_START_AFTER_SECONDS 30
 
-#include <ArduinoJson.h>
-#include "SSD1306.h"
-#include "BMP280.h"
-#include "SHT31.h"
-#include "MAX44009.h"
-#include "ADS1015.h"
-#include <SDS011.h>
-#include <PubSubClient.h>
+
 
 //#define BLYNK_PRINT Serial
 //#define BLYNK_GREEN     "#23C48E"
@@ -114,7 +110,7 @@ SHT31 sht31;
 Max44009 myLux(ADDR_MAX44009);
 ADS1115 ads(ADDR_ADS1115);
 HTTPClient http;
-HardwareSerial Serial1(1);
+extern HardwareSerial Serial1;
 SDS011 my_sds(Serial1);
 
 char readBytes(unsigned char *values, char length);
@@ -135,8 +131,6 @@ void CheckMQTTTimer();
 void UpdateDisplayTimer();
 void UpdateSensorsTimer();
 
-//void UpdateBlynk();
-//bool checkBlynk();
 
 uint8_t crc8(const uint8_t *data, uint8_t len);
 
@@ -249,6 +243,7 @@ void  CoreI2C(void * parameter )
   digitalWrite(PIN_GEIGER_ON, LOW);
   digitalWrite(PIN_AIR_QUALITY_ON, LOW);
   //Reboot when the i2c communication for the display is not started
+  Serial.println("Start");
 
   Wire.beginTransmission(ADDR_SSD1306);
   if (Wire.endTransmission(true) != 0)  // Device ACK'd
@@ -259,7 +254,7 @@ void  CoreI2C(void * parameter )
   //
   display.init();
   display.setContrast(255);
-  display.flipScreenVertically();
+  //display.flipScreenVertically();
   display.setFont(ArialMT_Plain_10);
   display.setTextAlignment(TEXT_ALIGN_LEFT);
   display.drawStringMaxWidth(0, 0, 128, "Booting.....");
