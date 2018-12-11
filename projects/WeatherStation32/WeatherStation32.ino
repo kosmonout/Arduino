@@ -67,28 +67,45 @@ portMUX_TYPE InteruptMux = portMUX_INITIALIZER_UNLOCKED;
 #define SERIAL1_RXPIN 16
 #define SERIAL1_TXPIN 17
 #define PIN_HEATERON 33
-#define PIN_POWERWIND 32
+#define PIN_SPEEDWIND 32
 #define PIN_GEIGER_TRIGGERED 21
 #define PIN_GEIGER_ON 2
 #define PIN_AIR_QUALITY_ON 4
 
-#define WIND_N 0.04
-#define WIND_NNE 0.35
-#define WIND_NE 0.66
-#define WIND_ENE 0.87
-#define WIND_E 1.28
-#define WIND_ESE 1.58
-#define WIND_SE 1.89
-#define WIND_SSE 2.20
-#define WIND_S 2.51
-#define WIND_SSW 2.82
-#define WIND_SW 3.13
-#define WIND_WSW 3.44
-#define WIND_W 3.75
-#define WIND_WNW 4.06
-#define WIND_NW 4.37
-#define WIND_NNW 4.68
-#define WIND_ACCURACY 0.12
+#define WIND_ANGLE_1 0.04
+#define WIND_ANGLE_2 0.35
+#define WIND_ANGLE_3 0.66
+#define WIND_ANGLE_4 0.87
+#define WIND_ANGLE_5 1.28
+#define WIND_ANGLE_6 1.58
+#define WIND_ANGLE_7 1.89
+#define WIND_ANGLE_8 2.20
+#define WIND_ANGLE_9 2.51
+#define WIND_ANGLE_10 2.82
+#define WIND_ANGLE_11 3.13
+#define WIND_ANGLE_12 3.44
+#define WIND_ANGLE_13 3.75
+#define WIND_ANGLE_14 4.06
+#define WIND_ANGLE_15 4.37
+#define WIND_ANGLE_16 4.68
+
+#define WIND_DIR_1 "N"
+#define WIND_DIR_2 "NNE"
+#define WIND_DIR_3 "NE"
+#define WIND_DIR_4 "ENE"
+#define WIND_DIR_5 "E"
+#define WIND_DIR_6 "ESE"
+#define WIND_DIR_7 "SE"
+#define WIND_DIR_8 "SSE"
+#define WIND_DIR_9 "S"
+#define WIND_DIR_10 "SSW"
+#define WIND_DIR_11 "SW"
+#define WIND_DIR_12 "WSW"
+#define WIND_DIR_13 "W"
+#define WIND_DIR_14 "WNW"
+#define WIND_DIR_15 "NW"
+#define WIND_DIR_16 "NNW"
+#define NORTH_POS 1
 
 #define ADC_IN_WINDPOWER 0
 #define ADC_IN_WINDIRECTION 1
@@ -148,7 +165,7 @@ double dPressure;
 double dPressurePrev = 0;
 int iPressureDirection = 0;
 double dLightLux;
-double dWindPower;
+double dWindSpeed;
 String sWindDirection;
 int iRadiationCount = 0;
 int iRadiationTotal = 0;
@@ -157,14 +174,17 @@ bool bTemperatureAvail;
 bool bHumidityAvail;
 bool bPressureAvail;
 bool bLightLuxAvail;
-bool bWindPowerAvail;
+bool bWindSpeedAvail;
 bool bWindDirectionAvail;
 bool bRainAvail;
+double dRainVoltage;
+double dWindDirVoltage;
+double dWindSpdVoltage;
 boolean bHeaterRain = false;
 int iRainLevel = 0;
 int iAlarmCount;
 int iMQTTUpdateScreen = 1;
-int iWindAngle = 0;
+int dWindAngle = 0;
 boolean bWAlarm = false;
 String sJSONsendCommand;
 String sRebootMessage;
@@ -237,9 +257,9 @@ void  CoreI2C(void * parameter )
   pinMode(PIN_HEATERON, OUTPUT);
   pinMode(PIN_GEIGER_ON, OUTPUT);
   pinMode(PIN_AIR_QUALITY_ON, OUTPUT);
-  pinMode(PIN_POWERWIND, OUTPUT);
+  pinMode(PIN_SPEEDWIND, OUTPUT);
   digitalWrite(PIN_HEATERON, LOW);
-  digitalWrite(PIN_POWERWIND, LOW);
+  digitalWrite(PIN_SPEEDWIND, LOW);
   digitalWrite(PIN_GEIGER_ON, LOW);
   digitalWrite(PIN_AIR_QUALITY_ON, LOW);
   //Reboot when the i2c communication for the display is not started
@@ -386,7 +406,7 @@ void  CoreI2C(void * parameter )
         error = my_sds.read(&fPm2_5, &fPm10);
         if (! error)
         {
-         // Serial.println("AIR QUALITY sample");
+          // Serial.println("AIR QUALITY sample");
           iAirReadErrorCount = 0;
           bAirQualitySampleStart == false;
         }
@@ -395,7 +415,7 @@ void  CoreI2C(void * parameter )
           iAirReadErrorCount++;
           if (iAirReadErrorCount > AIR_QUALITY_ERROR_COUNT)
           {
-           // Serial.println("AIR QUALITY error");
+            // Serial.println("AIR QUALITY error");
             fPm2_5 = -999;
             fPm10 = -999;
             iAirReadErrorCount = 0;
@@ -418,7 +438,7 @@ void  CoreI2C(void * parameter )
       }
       else if (iMinuteCount == (GEIGER_COUNT_STARTS_MINUTE + GEIGER_SAMPLE_MINUTES))
       {
-       // Serial.println("Geiger stops");
+        // Serial.println("Geiger stops");
         digitalWrite(PIN_GEIGER_ON, LOW);
         //0.2 samples per second self inducted false reading
         if (iRadiationCount > 0)
@@ -584,9 +604,9 @@ void IRAM_ATTR MinuteTimer()
     iHourCountDebug++;
   }
   // Reset after one year of operational time
-  if (iHourCountDebug >8759)
+  if (iHourCountDebug > 8759)
   {
-    iHourCountDebug=0;
+    iHourCountDebug = 0;
   }
   portEXIT_CRITICAL_ISR(&timerMuxMinute);
 }
@@ -607,7 +627,7 @@ void  UpdateDisplay()
 
 void UpdateSensors()
 {
-  digitalWrite(PIN_POWERWIND, HIGH);
+  digitalWrite(PIN_SPEEDWIND, HIGH);
   dTemperature = sht31.readTemperature() + TEMPERATURE_CAL;
   //Serial.println("readTemperature");
   //Serial.println(String(dTemperature));
@@ -672,23 +692,27 @@ void UpdateSensors()
   {
     bLightLuxAvail = true;
   }
-  double dWindPwrVoltage = ads.readADC_SingleEnded(ADC_IN_WINDPOWER);
-  if (dWindPwrVoltage == 0xFFFF)
+  dWindSpdVoltage = ads.readADC_SingleEnded(ADC_IN_WINDPOWER);
+  if (dWindSpdVoltage == 0xFFFF)
   {
-    bWindPowerAvail = false;
+    bWindSpeedAvail = false;
   }
   else
   {
-    bWindPowerAvail = true;
-    dWindPwrVoltage = dWindPwrVoltage * 0.1875e-3;
-    dWindPower = dWindPwrVoltage * 10;
-    if (dWindPower < 1)
+    // 0 - 30 m/d 0-5V 0.167 mV 60mV offset
+    bWindSpeedAvail = true;
+    dWindSpdVoltage = dWindSpdVoltage * 0.1875e-3;
+    dWindSpeed = (dWindSpdVoltage-0.07) * 6;
+    if (dWindSpeed < 0)
     {
-      dWindPower = 0;
+      dWindSpeed = 0;
     }
+    Serial.println("dWindSpdVoltage");
+    Serial.println(dWindSpdVoltage);
+
   }
 
-  double dWindDirVoltage = ads.readADC_SingleEnded(ADC_IN_WINDIRECTION);
+  dWindDirVoltage = ads.readADC_SingleEnded(ADC_IN_WINDIRECTION);
   if (dWindDirVoltage == 0xFFFF)
   {
     bWindDirectionAvail = false;
@@ -697,93 +721,116 @@ void UpdateSensors()
   {
     bWindDirectionAvail = true;
     dWindDirVoltage = dWindDirVoltage * 0.1875e-3;
-    if (((WIND_N - WIND_ACCURACY) < dWindDirVoltage) && (dWindDirVoltage < (WIND_N + WIND_ACCURACY)))
+    if ((WIND_ANGLE_1 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_2))
     {
-      sWindDirection = "N";
-      iWindAngle = 0;
+      sWindDirection = WIND_DIR_1;
+      dWindAngle = (NORTH_POS - 1) * 22.5;
+      if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
-    else if (((WIND_NNE - WIND_ACCURACY) < dWindDirVoltage) && (dWindDirVoltage < (WIND_NNE + WIND_ACCURACY)))
+    else if ((WIND_ANGLE_2 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_3))
     {
-      sWindDirection = "NNE";
-      iWindAngle = 22;
+      sWindDirection = WIND_DIR_2;
+      dWindAngle = (NORTH_POS ) * 22.5;
+      if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
-    else if (((WIND_NE - WIND_ACCURACY) < dWindDirVoltage) && (dWindDirVoltage < (WIND_NE + WIND_ACCURACY)))
+    else if ((WIND_ANGLE_3 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_4))
     {
-      sWindDirection = "NE";
-      iWindAngle = 45;
+      sWindDirection = WIND_DIR_3;
+      dWindAngle = (NORTH_POS + 1) * 22.5;
+      if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
-    else if (((WIND_ENE - WIND_ACCURACY) < dWindDirVoltage) && (dWindDirVoltage < (WIND_ENE + WIND_ACCURACY)))
+    else if ((WIND_ANGLE_4 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_5))
     {
-      sWindDirection = "ENE";
-      iWindAngle = 67;
+      sWindDirection = WIND_DIR_4;
+      dWindAngle = (NORTH_POS + 2) * 22.5;
+      if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
-    else if (((WIND_E - WIND_ACCURACY) < dWindDirVoltage) && (dWindDirVoltage < (WIND_E + WIND_ACCURACY)))
+    else if ((WIND_ANGLE_5 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_6))
     {
-      sWindDirection = "E";
-      iWindAngle = 90;
+      sWindDirection = WIND_DIR_5;
+      dWindAngle = (NORTH_POS + 3) * 22.5;
+      if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
-    else if (((WIND_ESE - WIND_ACCURACY) < dWindDirVoltage) && (dWindDirVoltage < (WIND_ESE + WIND_ACCURACY)))
+    else if ((WIND_ANGLE_6 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_7))
     {
-      sWindDirection = "ESE";
-      iWindAngle = 112;
+      sWindDirection = WIND_DIR_6;
+      dWindAngle = (NORTH_POS + 4) * 22.5;
+      if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
-    else if (((WIND_SE - WIND_ACCURACY) < dWindDirVoltage) && (dWindDirVoltage < (WIND_SE + WIND_ACCURACY)))
+    else if ((WIND_ANGLE_7 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_8))
     {
-      sWindDirection = "SE";
-      iWindAngle = 135;
+      sWindDirection = WIND_DIR_7;
+      dWindAngle = (NORTH_POS + 5) * 22.5;
+      if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
-    else if (((WIND_SSE - WIND_ACCURACY) < dWindDirVoltage) && (dWindDirVoltage < (WIND_SSE + WIND_ACCURACY)))
+    else if ((WIND_ANGLE_8  < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_9))
     {
-      sWindDirection = "SSE";
-      iWindAngle = 147;
+      sWindDirection = WIND_DIR_8;
+      dWindAngle = (NORTH_POS + 6) * 22.5;
+      if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
-    else if (((WIND_S - WIND_ACCURACY) < dWindDirVoltage) && (dWindDirVoltage < (WIND_S + WIND_ACCURACY)))
+    else if ((WIND_ANGLE_9 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_10))
     {
-      sWindDirection = "S";
-      iWindAngle = 180;
+      sWindDirection = WIND_DIR_9;
+      dWindAngle = (NORTH_POS + 7) * 22.5;
+      if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
-    else if (((WIND_SSW - WIND_ACCURACY) < dWindDirVoltage) && (dWindDirVoltage < (WIND_SSW + WIND_ACCURACY)))
+    else if ((WIND_ANGLE_10 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_11))
     {
-      sWindDirection = "SSW";
-      iWindAngle = 202;
+      sWindDirection = WIND_DIR_10;
+      dWindAngle = (NORTH_POS + 8) * 22.5;
+      if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
-    else if (((WIND_SW - WIND_ACCURACY) < dWindDirVoltage) && (dWindDirVoltage < (WIND_SW + WIND_ACCURACY)))
+    else if ((WIND_ANGLE_11 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_12))
     {
-      sWindDirection = "SW";
-      iWindAngle = 225;
+      sWindDirection = WIND_DIR_11;
+      dWindAngle = (NORTH_POS + 9) * 22.5;
+      if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
-    else if (((WIND_WSW - WIND_ACCURACY) < dWindDirVoltage) && (dWindDirVoltage < (WIND_WSW + WIND_ACCURACY)))
+    else if ((WIND_ANGLE_12 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_13))
     {
-      sWindDirection = "WSW";
-      iWindAngle = 247;
+      sWindDirection = WIND_DIR_12;
+      dWindAngle = (NORTH_POS + 10) * 22.5;
+      if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
-    else if (((WIND_W - WIND_ACCURACY) < dWindDirVoltage) && (dWindDirVoltage < (WIND_W + WIND_ACCURACY)))
+    else if ((WIND_ANGLE_13 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_14))
     {
-      sWindDirection = "W";
-      iWindAngle = 270;
+      sWindDirection = WIND_DIR_13;
+      dWindAngle = (NORTH_POS + 11) * 22.5;
+      if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
-    else if (((WIND_WNW - WIND_ACCURACY) < dWindDirVoltage) && (dWindDirVoltage < (WIND_WNW + WIND_ACCURACY)))
+    else if ((WIND_ANGLE_14 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_15))
     {
-      sWindDirection = "WNW";
-      iWindAngle = 292;
+      sWindDirection = WIND_DIR_14;
+      dWindAngle = (NORTH_POS + 12) * 22.5;
+      if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
-    else if (((WIND_NW - WIND_ACCURACY) < dWindDirVoltage) && (dWindDirVoltage < (WIND_NW + WIND_ACCURACY)))
+    else if ((WIND_ANGLE_15 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_16))
     {
-      sWindDirection = "NW";
-      iWindAngle = 315;
+      sWindDirection = WIND_DIR_15;
+      dWindAngle = (NORTH_POS + 13) * 22.5;
+      if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
-    else if (((WIND_NNW - WIND_ACCURACY) < dWindDirVoltage) && (dWindDirVoltage < (WIND_NNW + WIND_ACCURACY)))
+    else if (WIND_ANGLE_16 < dWindDirVoltage)
     {
-      sWindDirection = "NNW";
-      iWindAngle = 337;
+      sWindDirection = WIND_DIR_16;
+      dWindAngle = (NORTH_POS + 14) * 22.5;
+      if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     } else
     {
-      iWindAngle = 999;
+      dWindAngle = 999;
       sWindDirection = "ERROR";
     }
+    Serial.println("dWindDirVoltage");
+    Serial.println(dWindDirVoltage);
+    Serial.println("dRainVoltage");
+    Serial.println(dRainVoltage);
+    Serial.println("bHeaterRain");
+    Serial.println(bHeaterRain);
+
   }
-  digitalWrite(PIN_POWERWIND, LOW);
-  double dRainVoltage = ads.readADC_SingleEnded(ADC_IN_RAIN);
+  //digitalWrite(PIN_SPEEDWIND, LOW);
+  dRainVoltage = ads.readADC_SingleEnded(ADC_IN_RAIN);
   if (dRainVoltage == 0xFFFF)
   {
     bRainAvail = false;
@@ -814,7 +861,7 @@ void UpdateSensors()
     }
   }
 
-  if ((dWindPower > WIND_ALARM || iRainLevel > 1 ) && bWAlarm == false )
+  if ((dWindSpeed > WIND_ALARM || iRainLevel > 1 ) && bWAlarm == false )
   {
     bWAlarm = true;
     iAlarmCount = COUT_WIND_ALARM;
@@ -836,7 +883,6 @@ void UpdateMQTT()
 {
   //Upload to MQTT
   //In steps othewise the device will be loose connection with to many virtualwrites at once.
-
   switch (iMQTTUpdateScreen)
   {
     case 1:
@@ -883,22 +929,40 @@ void UpdateMQTT()
       if (bWindDirectionAvail)
       {
         MQTTclient.publish("WindDirection", sWindDirection.c_str());
-        MQTTclient.publish("WindAngle", String(iWindAngle).c_str());
+        MQTTclient.publish("WindAngle", String(dWindAngle).c_str());
       }
       else
       {
         MQTTclient.publish("WindDirection", "error");
         MQTTclient.publish("WindAngle", "999");
       }
-      break;
-    case 6:
-      if (bWindPowerAvail)
+      //Debug Only
+      if (dWindDirVoltage  > 0)
       {
-        MQTTclient.publish("WindPower", String(dWindPower).c_str());
+        MQTTclient.publish("WindDirVoltage", String(dWindDirVoltage).c_str());
       }
       else
       {
-        MQTTclient.publish("WindPower", "error");
+        MQTTclient.publish("WindDirVoltage", "Error");
+      }
+      break;
+    case 6:
+      if (bWindSpeedAvail)
+      {
+        MQTTclient.publish("WindSpeed", String(dWindSpeed).c_str());
+      }
+      else
+      {
+        MQTTclient.publish("WindSpeed", "error");
+      }
+      // Debug only
+      if (dWindSpdVoltage  > 0)
+      {
+        MQTTclient.publish("WindSpdVoltage", String(dWindSpdVoltage).c_str());
+      }
+      else
+      {
+        MQTTclient.publish("WindSpdVoltage", "Error");
       }
       break;
     case 7:
@@ -922,6 +986,15 @@ void UpdateMQTT()
       else
       {
         MQTTclient.publish("Rain", "ERROR");
+      }
+      //Debug only
+      if (dRainVoltage  > 0)
+      {
+        MQTTclient.publish("RainVoltage", String(dRainVoltage).c_str());
+      }
+      else
+      {
+        MQTTclient.publish("RainVoltage", "Error");
       }
       break;
     case 8:
@@ -974,9 +1047,19 @@ void UpdateMQTT()
         MQTTclient.publish("PM10", "Error");
       }
       break;
+    case 13:
+      if (bHeaterRain == true)
+      {
+        MQTTclient.publish("HeaterRain", "ON");
+      }
+      else
+      {
+        MQTTclient.publish("HeaterRain", "OFF");
+      }
+      break;
   }
   iMQTTUpdateScreen++;
-  if (iMQTTUpdateScreen > 12) iMQTTUpdateScreen = 1;
+  if (iMQTTUpdateScreen > 13) iMQTTUpdateScreen = 1;
 }
 
 void  DisplayStatus() {
@@ -1112,9 +1195,9 @@ void  DisplayStatus() {
     case 3:
       display.drawString(31, 30, "WndP [km/h]");
       display.drawString(95, 30, "WndDir");
-      if (bWindPowerAvail)
+      if (bWindSpeedAvail)
       {
-        display.drawString(31, 47, String(dWindPower));
+        display.drawString(31, 47, String(dWindSpeed));
       }
       else
       {
@@ -1336,13 +1419,13 @@ JsonObject& prepareResponse(JsonBuffer & jsonBuffer)
   {
     root["sWindDirection"] = "ERROR";
   }
-  if (bWindPowerAvail)
+  if (bWindSpeedAvail)
   {
-    root["dWindPower"] = String(dWindPower);
+    root["dWindSpeed"] = String(dWindSpeed);
   }
   else
   {
-    root["dWindPower"] = String(-999);
+    root["dWindSpeed"] = String(-999);
   }
   if (bRainAvail)
   {
