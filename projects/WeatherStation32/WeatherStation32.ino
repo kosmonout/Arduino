@@ -13,19 +13,23 @@
 hw_timer_t * timerDispl = NULL;
 hw_timer_t * timerMinute = NULL;
 hw_timer_t * timerSensors = NULL;
+hw_timer_t * timerWatchDog = NULL;
 portMUX_TYPE timerMuxDispl = portMUX_INITIALIZER_UNLOCKED;
 portMUX_TYPE timerMuxMinute = portMUX_INITIALIZER_UNLOCKED;
 portMUX_TYPE timerMuxSensors = portMUX_INITIALIZER_UNLOCKED;
+portMUX_TYPE timerMuxWatchDog = portMUX_INITIALIZER_UNLOCKED;
 portMUX_TYPE InteruptMux = portMUX_INITIALIZER_UNLOCKED;
+
 
 #define DISPLAY_INTERVAL_MS 2500
 #define CONTACT_MINUTE_INTERVAL_MS 60000
 #define UPDATE_SENSOR_MS 3000
 #define CHECK_MQTT_MS 1000
+#define WATCHDOG_TIMEOUT_MS 10000
 
 #define HTTP_PORT 80
-#define HEATER_ON_MOISTURE 75
-#define HEATER_OFF_MOISTURE 70
+#define HEATER_ON_MOISTURE 85
+#define HEATER_OFF_MOISTURE 80
 #define TEMPERATURE_CAL -0.35
 #define DELTA_AIR_PRESURE_ARROW 0.5
 #define RAIN_MAX 1.3
@@ -66,7 +70,7 @@ portMUX_TYPE InteruptMux = portMUX_INITIALIZER_UNLOCKED;
 #define PIN_SCL 19
 #define SERIAL1_RXPIN 16
 #define SERIAL1_TXPIN 17
-#define PIN_HEATERON 33
+#define PIN_HEATER_OFF 33
 #define PIN_SPEEDWIND 32
 #define PIN_GEIGER_TRIGGERED 21
 #define PIN_GEIGER_ON 2
@@ -147,6 +151,7 @@ void ISR_geiger();
 void CheckMQTTTimer();
 void UpdateDisplayTimer();
 void UpdateSensorsTimer();
+void resetModule();
 
 
 uint8_t crc8(const uint8_t *data, uint8_t len);
@@ -254,11 +259,11 @@ void  CoreI2C(void * parameter )
   //Air Quality in sleep mode
   my_sds.sleep();
   Serial.begin(115200);
-  pinMode(PIN_HEATERON, OUTPUT);
+  pinMode(PIN_HEATER_OFF, OUTPUT);
   pinMode(PIN_GEIGER_ON, OUTPUT);
   pinMode(PIN_AIR_QUALITY_ON, OUTPUT);
   pinMode(PIN_SPEEDWIND, OUTPUT);
-  digitalWrite(PIN_HEATERON, LOW);
+  digitalWrite(PIN_HEATER_OFF, HIGH);
   digitalWrite(PIN_SPEEDWIND, LOW);
   digitalWrite(PIN_GEIGER_ON, LOW);
   digitalWrite(PIN_AIR_QUALITY_ON, LOW);
@@ -349,6 +354,10 @@ void  CoreI2C(void * parameter )
   timerAttachInterrupt(timerSensors, &UpdateSensorsTimer, true);
   timerAlarmWrite(timerSensors, UPDATE_SENSOR_MS * 1000, true);
 
+  timerWatchDog = timerBegin(3, 80, true);                  //timer 0, div 80
+  timerAttachInterrupt(timerWatchDog, &resetModule, true);  //attach callback
+  timerAlarmWrite(timerWatchDog, WATCHDOG_TIMEOUT_MS * 1000, false); //set time in us
+  timerAlarmEnable(timerWatchDog); //enable interrupt
 
   // Blynk.run();
   //  checkBlynk();
@@ -366,11 +375,13 @@ void  CoreI2C(void * parameter )
   // Initialising the UI will init the display too.
   display.clear();
   UpdateSensors();
+ 
+  
   //LOOP FUNCTION *****************************************************************
   for (;;) {
 
-    //Reboot when the i2c communication get lost....
-
+   //Reset Wachtdog Timer
+   timerWrite(timerWatchDog, 0); 
 
     DisplayStatus();
     // String taskMessage = "loop running on core ";
@@ -592,6 +603,13 @@ void IRAM_ATTR UpdateDisplayTimer()
   portEXIT_CRITICAL_ISR(&timerMuxDispl);
 }
 
+void IRAM_ATTR resetModule() {
+  portENTER_CRITICAL_ISR(&timerMuxWatchDog);
+  Serial.println("Watch Dog Reboot!");
+  esp_restart();
+  portEXIT_CRITICAL_ISR(&timerMuxWatchDog);
+}
+
 void IRAM_ATTR MinuteTimer()
 {
   portENTER_CRITICAL_ISR(&timerMuxMinute);
@@ -641,7 +659,6 @@ void UpdateSensors()
   dHumidity = sht31.readHumidity();
   if (dHumidity < 0 || dHumidity > 100)
   {
-    digitalWrite(PIN_HEATERON, HIGH);
     bHumidityAvail = false;
   }
   else
@@ -650,14 +667,14 @@ void UpdateSensors()
   }
   //If we do not know the moisture level put the heater on
   //Put the heater if the moisture level is too high or the rainsensor start to conduct
-  if (dHumidity > HEATER_ON_MOISTURE || iRainLevel > 0 || bHumidityAvail == false)
+  if (dHumidity >= HEATER_ON_MOISTURE || iRainLevel > 0 || bHumidityAvail == false)
   {
-    digitalWrite(PIN_HEATERON, HIGH);
+    digitalWrite(PIN_HEATER_OFF, LOW);
     bHeaterRain = true;
   }
-  else
+  else if((dHumidity <= HEATER_OFF_MOISTURE) && (iRainLevel == 0)) 
   {
-    digitalWrite(PIN_HEATERON, LOW);
+    digitalWrite(PIN_HEATER_OFF, HIGH);
     bHeaterRain = false;
   }
   dPressure = bmp.readPressure() / 100;
