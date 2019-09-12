@@ -52,7 +52,6 @@ portMUX_TYPE InteruptMux = portMUX_INITIALIZER_UNLOCKED;
 #define AIR_QUALITY_SAMPLE_MINUTES 1
 #define CPM_TO_USV_HOUR 0.0064648101265823
 #define WIND_ALARM 20 // 
-#define COUT_WIND_ALARM 50
 #define AIR_QUALITY_ERROR_COUNT 10
 #define AIR_SAMPLE_TIME_START_AFTER_SECONDS 30
 
@@ -70,7 +69,7 @@ portMUX_TYPE InteruptMux = portMUX_INITIALIZER_UNLOCKED;
 #define PIN_SCL 19
 #define SERIAL1_RXPIN 16
 #define SERIAL1_TXPIN 17
-#define PIN_HEATER_OFF 33
+#define PIN_HEATER_ON  33
 #define PIN_SPEEDWIND 32
 #define PIN_GEIGER_TRIGGERED 21
 #define PIN_GEIGER_ON 2
@@ -259,11 +258,11 @@ void  CoreI2C(void * parameter )
   //Air Quality in sleep mode
   my_sds.sleep();
   Serial.begin(115200);
-  pinMode(PIN_HEATER_OFF, OUTPUT);
+  pinMode(PIN_HEATER_ON , OUTPUT);
   pinMode(PIN_GEIGER_ON, OUTPUT);
   pinMode(PIN_AIR_QUALITY_ON, OUTPUT);
   pinMode(PIN_SPEEDWIND, OUTPUT);
-  digitalWrite(PIN_HEATER_OFF, HIGH);
+  digitalWrite(PIN_HEATER_ON , LOW);
   digitalWrite(PIN_SPEEDWIND, LOW);
   digitalWrite(PIN_GEIGER_ON, LOW);
   digitalWrite(PIN_AIR_QUALITY_ON, LOW);
@@ -669,12 +668,12 @@ void UpdateSensors()
   //Put the heater if the moisture level is too high or the rainsensor start to conduct
   if (dHumidity >= HEATER_ON_MOISTURE || iRainLevel > 0 || bHumidityAvail == false)
   {
-    digitalWrite(PIN_HEATER_OFF, LOW);
+    digitalWrite(PIN_HEATER_ON , HIGH);
     bHeaterRain = true;
   }
   else if((dHumidity <= HEATER_OFF_MOISTURE) && (iRainLevel == 0)) 
   {
-    digitalWrite(PIN_HEATER_OFF, HIGH);
+    digitalWrite(PIN_HEATER_ON , LOW);
     bHeaterRain = false;
   }
   dPressure = bmp.readPressure() / 100;
@@ -881,19 +880,12 @@ void UpdateSensors()
   if ((dWindSpeed > WIND_ALARM || iRainLevel > 1 ) && bWAlarm == false )
   {
     bWAlarm = true;
-    iAlarmCount = COUT_WIND_ALARM;
   } else if (iAlarmCount == 0 && iRainLevel < 2 )
   {
     bWAlarm = false;
   }
 
-  if (iAlarmCount >= 0)
-  {
-    iAlarmCount--;
-  }
-  // vTaskResume(timerDispl);
-  //  vTaskResume(timerMinute);
-  // vTaskResume(timerSensors);
+ 
 }
 
 void UpdateMQTT()
@@ -1543,8 +1535,3 @@ bool checkMQTT()
   }
   return false;
 }
-
-
-
-
-
