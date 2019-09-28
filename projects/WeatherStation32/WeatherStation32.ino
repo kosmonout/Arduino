@@ -24,8 +24,8 @@ portMUX_TYPE InteruptMux = portMUX_INITIALIZER_UNLOCKED;
 #define DISPLAY_INTERVAL_MS 2500
 #define CONTACT_MINUTE_INTERVAL_MS 60000
 #define UPDATE_SENSOR_MS 3000
-#define CHECK_MQTT_MS 1000
 #define WATCHDOG_TIMEOUT_MS 10000
+#define HHTP_REQUEST_INTERVAL_SEC 60
 
 #define HTTP_PORT 80
 #define HEATER_ON_MOISTURE 85
@@ -38,7 +38,6 @@ portMUX_TYPE InteruptMux = portMUX_INITIALIZER_UNLOCKED;
 #define RAIN_NO 3.0
 #define SSID "kosmos"
 #define PASSWORD "funhouse"
-//#define BLYNK_AUTH "63fb3008df63415784b2284c087c64bd"
 #define INCOMMING_SERVER "http://192.168.2.165/api/app/com.internet/weather"
 #define MQTT_SERVER "m23.cloudmqtt.com"
 #define MQTT_PORT 17768
@@ -51,7 +50,7 @@ portMUX_TYPE InteruptMux = portMUX_INITIALIZER_UNLOCKED;
 #define AIR_QUALITY_COUNT_STARTS_MINUTE 0
 #define AIR_QUALITY_SAMPLE_MINUTES 1
 #define CPM_TO_USV_HOUR 0.0064648101265823
-#define WIND_ALARM 20 // 
+#define WIND_ALARM 6 // in m/s
 #define AIR_QUALITY_ERROR_COUNT 10
 #define AIR_SAMPLE_TIME_START_AFTER_SECONDS 30
 
@@ -75,40 +74,41 @@ portMUX_TYPE InteruptMux = portMUX_INITIALIZER_UNLOCKED;
 #define PIN_GEIGER_ON 2
 #define PIN_AIR_QUALITY_ON 4
 
-#define WIND_ANGLE_1 0.04
-#define WIND_ANGLE_2 0.35
-#define WIND_ANGLE_3 0.66
-#define WIND_ANGLE_4 0.87
-#define WIND_ANGLE_5 1.28
-#define WIND_ANGLE_6 1.58
-#define WIND_ANGLE_7 1.89
-#define WIND_ANGLE_8 2.20
-#define WIND_ANGLE_9 2.51
-#define WIND_ANGLE_10 2.82
-#define WIND_ANGLE_11 3.13
-#define WIND_ANGLE_12 3.44
-#define WIND_ANGLE_13 3.75
-#define WIND_ANGLE_14 4.06
-#define WIND_ANGLE_15 4.37
-#define WIND_ANGLE_16 4.68
+#define WIND_ANGLE_0 0.04
+#define WIND_ANGLE_1 0.35
+#define WIND_ANGLE_2 0.66
+#define WIND_ANGLE_3 0.87
+#define WIND_ANGLE_4 1.28
+#define WIND_ANGLE_5 1.58
+#define WIND_ANGLE_6 1.89
+#define WIND_ANGLE_7 2.20
+#define WIND_ANGLE_8 2.51
+#define WIND_ANGLE_9 2.82
+#define WIND_ANGLE_10 3.13
+#define WIND_ANGLE_11 3.44
+#define WIND_ANGLE_12 3.75
+#define WIND_ANGLE_13 4.06
+#define WIND_ANGLE_14 4.37
+#define WIND_ANGLE_15 4.68
+#define NORTH_POS_ANGLE WIND_ANGLE_13
 
-#define WIND_DIR_1 "N"
-#define WIND_DIR_2 "NNE"
-#define WIND_DIR_3 "NE"
-#define WIND_DIR_4 "ENE"
-#define WIND_DIR_5 "E"
-#define WIND_DIR_6 "ESE"
-#define WIND_DIR_7 "SE"
-#define WIND_DIR_8 "SSE"
-#define WIND_DIR_9 "S"
-#define WIND_DIR_10 "SSW"
-#define WIND_DIR_11 "SW"
-#define WIND_DIR_12 "WSW"
-#define WIND_DIR_13 "W"
-#define WIND_DIR_14 "WNW"
-#define WIND_DIR_15 "NW"
-#define WIND_DIR_16 "NNW"
-#define NORTH_POS 1
+#define WIND_DIR_0 "N"
+#define WIND_DIR_1 "NNE"
+#define WIND_DIR_2 "NE"
+#define WIND_DIR_3 "ENE"
+#define WIND_DIR_4 "E"
+#define WIND_DIR_5 "ESE"
+#define WIND_DIR_6 "SE"
+#define WIND_DIR_7 "SSE"
+#define WIND_DIR_8 "S"
+#define WIND_DIR_9 "SSW"
+#define WIND_DIR_10 "SW"
+#define WIND_DIR_11 "WSW"
+#define WIND_DIR_12 "W"
+#define WIND_DIR_13 "WNW"
+#define WIND_DIR_14 "NW"
+#define WIND_DIR_15 "NNW"
+
 
 #define ADC_IN_WINDPOWER 0
 #define ADC_IN_WINDIRECTION 1
@@ -190,6 +190,7 @@ int iAlarmCount;
 int iMQTTUpdateScreen = 1;
 int dWindAngle = 0;
 boolean bWAlarm = false;
+boolean bFirstWalarm = true;;
 String sJSONsendCommand;
 String sRebootMessage;
 bool bUpdateDisplayTimer = false;
@@ -358,13 +359,9 @@ void  CoreI2C(void * parameter )
   timerAlarmWrite(timerWatchDog, WATCHDOG_TIMEOUT_MS * 1000, false); //set time in us
   timerAlarmEnable(timerWatchDog); //enable interrupt
 
-  // Blynk.run();
-  //  checkBlynk();
-#ifdef ARDUINO_ESP32_DEV
+
   vTaskDelay( 2000 / portTICK_PERIOD_MS);
-#else
-  delay(2000);
-#endif
+
   timerAlarmEnable(timerDispl);
   timerAlarmEnable(timerMinute);
   //For the first 0 minute activation
@@ -374,13 +371,13 @@ void  CoreI2C(void * parameter )
   // Initialising the UI will init the display too.
   display.clear();
   UpdateSensors();
- 
-  
+
+
   //LOOP FUNCTION *****************************************************************
   for (;;) {
 
-   //Reset Wachtdog Timer
-   timerWrite(timerWatchDog, 0); 
+    //Reset Wachtdog Timer
+    timerWrite(timerWatchDog, 0);
 
     DisplayStatus();
     // String taskMessage = "loop running on core ";
@@ -496,8 +493,6 @@ void  CoreWiFi(void * parameter )
   sWiFiIP = WiFi.localIP().toString();
   MQTTclient.setServer(MQTT_SERVER, MQTT_PORT);
   int iTimeToReboot = 20;
-  //Blynk.config(BLYNK_AUTH);
-  // Blynk.connect(10);
   //LOOP FUNCTION *****************************************************************
   for (;;)
   {
@@ -536,10 +531,11 @@ void  CoreWiFi(void * parameter )
       bWIFIconnected = true;
       iWiFiStrength = WiFi.RSSI();
       sWiFiIP = WiFi.localIP().toString();
-      if (iCountHTTPInterval == 10)
+      if (iCountHTTPInterval == HHTP_REQUEST_INTERVAL_SEC || (bWAlarm == true && bFirstWalarm == true))
       {
         GetRequest();
         iCountHTTPInterval = 0;
+        bFirstWalarm = false;
       }
       bMQTT_connected = checkMQTT();
       iCountHTTPInterval++;
@@ -550,11 +546,11 @@ void  CoreWiFi(void * parameter )
         if (success)
         {
           //Send JSON
-          //Serial.println("readRequest success");
           StaticJsonBuffer<280> jsonWriteBuffer;
           JsonObject& jsonWrite = prepareResponse(jsonWriteBuffer);
           writeResponse(client, jsonWrite);
           bClientConnected = true;
+          Serial.println("readRequest success");
 
 #ifdef ARDUINO_ESP32_DEV
           vTaskDelay( 1 / portTICK_PERIOD_MS);
@@ -671,7 +667,7 @@ void UpdateSensors()
     digitalWrite(PIN_HEATER_ON , HIGH);
     bHeaterRain = true;
   }
-  else if((dHumidity <= HEATER_OFF_MOISTURE) && (iRainLevel == 0)) 
+  else if ((dHumidity <= HEATER_OFF_MOISTURE) && (iRainLevel == 0))
   {
     digitalWrite(PIN_HEATER_ON , LOW);
     bHeaterRain = false;
@@ -715,10 +711,10 @@ void UpdateSensors()
   }
   else
   {
-    // 0 - 30 m/d 0-5V 0.167 mV 60mV offset
+    // 0 - 30 m/s     0-5V     0.167 mV 60mV offset
     bWindSpeedAvail = true;
     dWindSpdVoltage = dWindSpdVoltage * 0.1875e-3;
-    dWindSpeed = (dWindSpdVoltage-0.07) * 6;
+    dWindSpeed = (dWindSpdVoltage - 0.07) * 6;
     if (dWindSpeed < 0)
     {
       dWindSpeed = 0;
@@ -736,101 +732,111 @@ void UpdateSensors()
   else
   {
     bWindDirectionAvail = true;
-    dWindDirVoltage = dWindDirVoltage * 0.1875e-3;
-    if ((WIND_ANGLE_1 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_2))
+
+    if (((dWindDirVoltage * 0.1875e-3) + NORTH_POS_ANGLE ) < WIND_ANGLE_15)
+    {
+      dWindDirVoltage = (dWindDirVoltage * 0.1875e-3) + NORTH_POS_ANGLE;
+    }
+    else
+    {
+      dWindDirVoltage = (dWindDirVoltage * 0.1875e-3) + NORTH_POS_ANGLE - WIND_ANGLE_15;
+    }
+
+    if ((WIND_ANGLE_0 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_1))
+    {
+      sWindDirection = WIND_DIR_0;
+      dWindAngle = 0;
+      if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
+    }
+    else if ((WIND_ANGLE_1 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_2))
     {
       sWindDirection = WIND_DIR_1;
-      dWindAngle = (NORTH_POS - 1) * 22.5;
+      dWindAngle = 22.5;
       if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
     else if ((WIND_ANGLE_2 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_3))
     {
       sWindDirection = WIND_DIR_2;
-      dWindAngle = (NORTH_POS ) * 22.5;
+      dWindAngle = 2 * 22.5;
       if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
     else if ((WIND_ANGLE_3 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_4))
     {
       sWindDirection = WIND_DIR_3;
-      dWindAngle = (NORTH_POS + 1) * 22.5;
+      dWindAngle = 3 * 22.5;
       if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
     else if ((WIND_ANGLE_4 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_5))
     {
       sWindDirection = WIND_DIR_4;
-      dWindAngle = (NORTH_POS + 2) * 22.5;
+      dWindAngle = 4 * 22.5;
       if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
     else if ((WIND_ANGLE_5 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_6))
     {
       sWindDirection = WIND_DIR_5;
-      dWindAngle = (NORTH_POS + 3) * 22.5;
+      dWindAngle = 5 * 22.5;
       if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
     else if ((WIND_ANGLE_6 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_7))
     {
       sWindDirection = WIND_DIR_6;
-      dWindAngle = (NORTH_POS + 4) * 22.5;
+      dWindAngle = 6 * 22.5;
       if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
-    else if ((WIND_ANGLE_7 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_8))
+    else if ((WIND_ANGLE_7  < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_8))
     {
       sWindDirection = WIND_DIR_7;
-      dWindAngle = (NORTH_POS + 5) * 22.5;
+      dWindAngle = 7 * 22.5;
       if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
-    else if ((WIND_ANGLE_8  < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_9))
+    else if ((WIND_ANGLE_8 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_9))
     {
       sWindDirection = WIND_DIR_8;
-      dWindAngle = (NORTH_POS + 6) * 22.5;
+      dWindAngle = 8 * 22.5;
       if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
     else if ((WIND_ANGLE_9 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_10))
     {
       sWindDirection = WIND_DIR_9;
-      dWindAngle = (NORTH_POS + 7) * 22.5;
+      dWindAngle = 9 * 22.5;
       if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
     else if ((WIND_ANGLE_10 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_11))
     {
       sWindDirection = WIND_DIR_10;
-      dWindAngle = (NORTH_POS + 8) * 22.5;
+      dWindAngle = 10 * 22.5;
       if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
     else if ((WIND_ANGLE_11 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_12))
     {
       sWindDirection = WIND_DIR_11;
-      dWindAngle = (NORTH_POS + 9) * 22.5;
+      dWindAngle = 11 * 22.5;
       if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
     else if ((WIND_ANGLE_12 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_13))
     {
       sWindDirection = WIND_DIR_12;
-      dWindAngle = (NORTH_POS + 10) * 22.5;
+      dWindAngle = 12 * 22.5;
       if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
     else if ((WIND_ANGLE_13 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_14))
     {
       sWindDirection = WIND_DIR_13;
-      dWindAngle = (NORTH_POS + 11) * 22.5;
+      dWindAngle = 13 * 22.5;
       if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
     else if ((WIND_ANGLE_14 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_15))
     {
       sWindDirection = WIND_DIR_14;
-      dWindAngle = (NORTH_POS + 12) * 22.5;
+      dWindAngle = 14 * 22.5;
+      
       if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
-    else if ((WIND_ANGLE_15 < dWindDirVoltage) && (dWindDirVoltage <= WIND_ANGLE_16))
+    else if (WIND_ANGLE_15 < dWindDirVoltage)
     {
       sWindDirection = WIND_DIR_15;
-      dWindAngle = (NORTH_POS + 13) * 22.5;
-      if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
-    }
-    else if (WIND_ANGLE_16 < dWindDirVoltage)
-    {
-      sWindDirection = WIND_DIR_16;
-      dWindAngle = (NORTH_POS + 14) * 22.5;
+      dWindAngle = 15 * 22.5;
       if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     } else
     {
@@ -880,12 +886,18 @@ void UpdateSensors()
   if ((dWindSpeed > WIND_ALARM || iRainLevel > 1 ) && bWAlarm == false )
   {
     bWAlarm = true;
-  } else if (iAlarmCount == 0 && iRainLevel < 2 )
+    iAlarmCount = 5;
+  } else if (iAlarmCount == 0)
   {
     bWAlarm = false;
+    bFirstWalarm = true;
+  }
+  iAlarmCount--;
+  if (iAlarmCount < 0)
+  {
+    iAlarmCount = 0;
   }
 
- 
 }
 
 void UpdateMQTT()
