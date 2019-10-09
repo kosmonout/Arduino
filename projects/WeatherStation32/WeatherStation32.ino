@@ -29,13 +29,13 @@ portMUX_TYPE InteruptMux = portMUX_INITIALIZER_UNLOCKED;
 
 #define HTTP_PORT 80
 #define HEATER_ON_MOISTURE 85
-#define HEATER_OFF_MOISTURE 80
+#define HEATER_OFF_MOISTURE 83
 #define TEMPERATURE_CAL -0.35
 #define DELTA_AIR_PRESURE_ARROW 0.5
-#define RAIN_MAX 1.3
-#define RAIN_MEDIUM 1.7
-#define RAIN_LOW 2.2
-#define RAIN_NO 3.0
+#define RAIN_MAX 3.0
+#define RAIN_MEDIUM 4.0
+#define RAIN_LOW 4.8
+#define RAIN_NO 5.1
 #define SSID "kosmos"
 #define PASSWORD "funhouse"
 #define INCOMMING_SERVER "http://192.168.2.165/api/app/com.internet/weather"
@@ -873,11 +873,6 @@ void UpdateSensors()
       iRainLevel = 2;
     }
     else if (dRainVoltage > RAIN_LOW && dRainVoltage < RAIN_NO )
-    {
-      //To detect if there is moisture to set already the heater on
-      iRainLevel = 1;
-    }
-    else
     {
       iRainLevel = 0;
     }
