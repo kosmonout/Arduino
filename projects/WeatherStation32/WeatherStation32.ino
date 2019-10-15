@@ -531,7 +531,7 @@ void  CoreWiFi(void * parameter )
       bWIFIconnected = true;
       iWiFiStrength = WiFi.RSSI();
       sWiFiIP = WiFi.localIP().toString();
-      if (iCountHTTPInterval == HHTP_REQUEST_INTERVAL_SEC || (bWAlarm == true && bFirstWalarm == true))
+      if (iCountHTTPInterval >= HHTP_REQUEST_INTERVAL_SEC || (bWAlarm == true && bFirstWalarm == true))
       {
         GetRequest();
         iCountHTTPInterval = 0;
@@ -830,7 +830,7 @@ void UpdateSensors()
     {
       sWindDirection = WIND_DIR_14;
       dWindAngle = 14 * 22.5;
-      
+
       if (dWindAngle >= 360) dWindAngle = dWindAngle - 360;
     }
     else if (WIND_ANGLE_15 < dWindDirVoltage)
@@ -881,18 +881,24 @@ void UpdateSensors()
   if ((dWindSpeed > WIND_ALARM || iRainLevel > 1 ) && bWAlarm == false )
   {
     bWAlarm = true;
-    iAlarmCount = 5;
-  } else if (iAlarmCount == 0)
-  {
-    bWAlarm = false;
     bFirstWalarm = true;
+    iAlarmCount = 5;
   }
-  iAlarmCount--;
-  if (iAlarmCount < 0)
+  else if ((dWindSpeed > WIND_ALARM || iRainLevel > 1 ) && bWAlarm == true )
   {
-    iAlarmCount = 0;
+    iAlarmCount = 5;
+  }
+  else if ((dWindSpeed < WIND_ALARM && iRainLevel < 1 ) && bWAlarm == true )
+  {
+    iAlarmCount--;
   }
 
+if (iAlarmCount <= 0)
+  {
+    bWAlarm = false;
+    bFirstWalarm = false;
+    iAlarmCount = 0;
+  }
 }
 
 void UpdateMQTT()
