@@ -437,13 +437,13 @@ void  CoreI2C(void * parameter )
       bMinuteTimer = false;
       if (iMinuteCount >= MAXIMUM_MINUTE_LOOP) iMinuteCount = 0;
       //GEIGER COUNT STARTS
-      if (iMinuteCount == GEIGER_COUNT_STARTS_MINUTE)
+      if (iMinuteCount >= GEIGER_COUNT_STARTS_MINUTE)
       {
         //Serial.println("Geiger starts");
         digitalWrite(PIN_GEIGER_ON, HIGH);
         iRadiationCount = 0;
       }
-      else if (iMinuteCount == (GEIGER_COUNT_STARTS_MINUTE + GEIGER_SAMPLE_MINUTES))
+      else if (iMinuteCount >= (GEIGER_COUNT_STARTS_MINUTE + GEIGER_SAMPLE_MINUTES))
       {
         // Serial.println("Geiger stops");
         digitalWrite(PIN_GEIGER_ON, LOW);
@@ -461,7 +461,7 @@ void  CoreI2C(void * parameter )
         }
       }
       //AIR QUALITY COUNT STARTS
-      if (iMinuteCount == AIR_QUALITY_COUNT_STARTS_MINUTE)
+      if (iMinuteCount >= AIR_QUALITY_COUNT_STARTS_MINUTE)
       {
         //Serial.println("AIR QUALITY starts");
         digitalWrite(PIN_AIR_QUALITY_ON, HIGH);
@@ -469,7 +469,7 @@ void  CoreI2C(void * parameter )
         my_sds.wakeup();
         ulAirQualStartSampleTimeSeconds   = millis() / 1000;
       }
-      else if (iMinuteCount == (AIR_QUALITY_COUNT_STARTS_MINUTE + AIR_QUALITY_SAMPLE_MINUTES))
+      else if (iMinuteCount >= (AIR_QUALITY_COUNT_STARTS_MINUTE + AIR_QUALITY_SAMPLE_MINUTES))
       {
         //Serial.println("AIR QUALITY stops");
         my_sds.sleep();
