@@ -6,9 +6,10 @@
 #define BRIGHT_START 50
 #define BRIGHT_STOP 80
 #define CANDLE_COLOR 0.67
+#define GPIOPIN 0
 
 
-Adafruit_NeoPixel pixels(NUM_PIXELS, 2, NEO_GRB | NEO_KHZ800);
+Adafruit_NeoPixel pixels(NUM_PIXELS, GPIOPIN, NEO_GRB | NEO_KHZ800);
 
 void setup() 
 {
