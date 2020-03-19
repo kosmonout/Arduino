@@ -8,7 +8,6 @@
 #define CANDLE_COLOR 0.67
 #define GPIOPIN 0
 
-
 Adafruit_NeoPixel pixels(NUM_PIXELS, GPIOPIN, NEO_GRB | NEO_KHZ800);
 
 void setup()
@@ -30,7 +29,7 @@ void loop()
     iRed = random(BRIGHT_START, BRIGHT_STOP);
     iGreen = iRed * CANDLE_COLOR;
     pixels.setPixelColor(iNeoNum, pixels.Color(iRed, iGreen, 0));
+    delay(random(DELAY_START / NUM_PIXELS, DELAY_STOP / NUM_PIXELS));
+    pixels.show();
   }
-  pixels.show();
-  delay(random(DELAY_START, DELAY_STOP));
 }
