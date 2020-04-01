@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include "TickerScheduler.h"
 
-void tickerFlagHandle(volatile bool * flag)
+void tickerFlagHandle(bool * flag)
 {
     if (!*flag)
         *flag = true;
@@ -26,7 +26,7 @@ TickerScheduler::~TickerScheduler()
     this->size = 0;
 }
 
-void TickerScheduler::handleTicker(tscallback_t f, volatile bool * flag)
+void TickerScheduler::handleTicker(tscallback_t f, bool * flag)
 {
     if (*flag)
     {

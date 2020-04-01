@@ -2,16 +2,16 @@
 #include <stdint.h>
 #include <functional>
 
-void tickerFlagHandle(volatile bool * flag);
+void tickerFlagHandle(bool * flag);
 
 typedef std::function<void(void)> tscallback_t;
 
 struct TickerSchedulerItem
 {
     Ticker t;
-    volatile bool flag = false;
+    bool flag = false;
     tscallback_t cb;
-    volatile bool is_used = false;
+    bool is_used = false;
 };
 
 class TickerScheduler
@@ -20,7 +20,7 @@ private:
     uint size;
     TickerSchedulerItem *items = NULL;
 
-    void handleTicker(tscallback_t, volatile bool * flag);
+    void handleTicker(tscallback_t, bool * flag);
 
 public:
     TickerScheduler(uint size);
