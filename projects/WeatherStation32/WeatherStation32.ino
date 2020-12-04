@@ -20,7 +20,6 @@ portMUX_TYPE timerMuxSensors = portMUX_INITIALIZER_UNLOCKED;
 portMUX_TYPE timerMuxWatchDog = portMUX_INITIALIZER_UNLOCKED;
 portMUX_TYPE InteruptMux = portMUX_INITIALIZER_UNLOCKED;
 
-
 #define DISPLAY_INTERVAL_MS 2500
 #define CONTACT_MINUTE_INTERVAL_MS 60000
 #define UPDATE_SENSOR_MS 3000
@@ -54,15 +53,6 @@ portMUX_TYPE InteruptMux = portMUX_INITIALIZER_UNLOCKED;
 #define AIR_QUALITY_ERROR_COUNT 10
 #define AIR_SAMPLE_TIME_START_AFTER_SECONDS 30
 
-
-
-//#define BLYNK_PRINT Serial
-//#define BLYNK_GREEN     "#23C48E"
-//#define BLYNK_BLUE      "#04C0F8"
-//#define BLYNK_YELLOW    "#ED9D00"
-//#define BLYNK_RED       "#D3435C"
-//#define BLYNK_DARK_BLUE "#5F7CD8"
-//#include <BlynkSimpleEsp8266.h>
 //Inputs
 #define PIN_SDA 18
 #define PIN_SCL 19
@@ -108,7 +98,6 @@ portMUX_TYPE InteruptMux = portMUX_INITIALIZER_UNLOCKED;
 #define WIND_DIR_13 "WNW"
 #define WIND_DIR_14 "NW"
 #define WIND_DIR_15 "NNW"
-
 
 #define ADC_IN_WINDPOWER 0
 #define ADC_IN_WINDIRECTION 1

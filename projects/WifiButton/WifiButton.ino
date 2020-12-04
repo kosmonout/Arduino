@@ -8,6 +8,7 @@ const int port = 80;
 const char* ssid = "kosmos";
 const char* password = "funhouse";
 const int FrontDoorButtonPin = 0;
+const int WEMOS_LED = 2;
 
 const int ContactServerInterval_ms = 300000;
 
@@ -15,7 +16,6 @@ int FrontDoorButton;
 String sJSONreceiveCommand;
 String sJSONsendCommand;
 bool bFrontDoorHit = false;
-bool firstrun = true;
 bool WIFIconnected = false;
 bool ClientConnected = false;
 
@@ -33,9 +33,10 @@ void setup(void) {
 
   // Configure GPIO2 as OUTPUT.
   pinMode (FrontDoorButtonPin, INPUT_PULLUP);
-
+  pinMode (WEMOS_LED, OUTPUT);
+  digitalWrite(WEMOS_LED, HIGH);
   //Start network
-  Serial.begin(115200);
+  Serial.begin(9600);
   WiFi.disconnect();
   WiFi.begin(ssid, password);
   WIFIconnected = false;
@@ -53,6 +54,7 @@ void loop(void)
     if (WIFIconnected == true)
     {
       Serial.println("Wifi disconnected");
+      digitalWrite(WEMOS_LED, HIGH);
       server.close();
     }
     WIFIconnected = false;
@@ -64,6 +66,9 @@ void loop(void)
     {
       server.begin();
       WIFIconnected = true;
+      digitalWrite(WEMOS_LED, LOW);
+      Serial.println("Wifi connected");
+      printWiFiStatus();
     }
     WiFiClient client = server.available();
 
@@ -91,11 +96,11 @@ void loop(void)
           }
           sJSONreceiveCommand = "Unrecognized command";
           json_parsed.prettyPrintTo(Serial);
-          String sParsedDOOR = json_parsed["door"];
-          if (sParsedDOOR == "move")
+          String sParsedDOOR = json_parsed["frontbutton"];
+          if (sParsedDOOR == "hit")
           {
             sJSONreceiveCommand = "Rcv: " + sParsedDOOR;
-           }
+          }
           Serial.println(sJSONreceiveCommand);
         }
         StaticJsonBuffer<200> jsonWriteBuffer;
@@ -110,10 +115,23 @@ void loop(void)
 
   FrontDoorButton = digitalRead(FrontDoorButtonPin);
 
-  if ( FrontDoorButton == LOW )
+  if ( FrontDoorButton == LOW && WIFIconnected == true)
   {
     bFrontDoorHit = true;
-    Serial.println("GB ");
+    GetRequest();
+    digitalWrite(WEMOS_LED, HIGH);
+    delay(100);
+    digitalWrite(WEMOS_LED, LOW);
+    delay(100);
+    digitalWrite(WEMOS_LED, HIGH);
+    delay(100);
+    digitalWrite(WEMOS_LED, LOW);
+    delay(100);
+    digitalWrite(WEMOS_LED, HIGH);
+    delay(100);
+    digitalWrite(WEMOS_LED, LOW);
+    delay(100);
+    Serial.println("Button Hit ");
   }
 }
 
