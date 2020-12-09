@@ -4,7 +4,7 @@
 #define START_RANDOM_PIXEL 0
 #define STOP_RANDOM_PIXEL 1
 #define DELAY_START 50
-#define DELAY_LOOP_STOP 10000
+#define DELAY_LOOP_STOP 20000
 #define DELAY_STOP 200
 #define BRIGHT_START 40
 #define BRIGHT_STOP 80
@@ -17,8 +17,10 @@ int iGreen;
 int iDelay[NUM_PIXELS];
 bool bLedSet[NUM_PIXELS];
 
+
 void setup()
 {
+  Serial.begin(115200);
   pixels.begin();
   for (int i = 0; i < NUM_PIXELS; i++)
   {
@@ -129,245 +131,79 @@ void loop()
   //Walk through delay loop
   for (int iCount = 0; iCount < DELAY_LOOP_STOP; iCount++)
   {
+    Sparkle(0, iCount, 0, 100);
+    Sparkle(1, iCount, 250, 100);
+    Sparkle(2, iCount, 500, 100);
+    Sparkle(3, iCount, 750, 100);
+    Sparkle(4, iCount, 1000, 100);
+    Sparkle(5, iCount, 1250, 100);
+    Sparkle(6, iCount, 1500, 100);
+    Sparkle(7, iCount, 1750, 100);
+    Sparkle(8, iCount, 2000, 100);
+    Sparkle(9, iCount, 2250, 100);
+    Sparkle(10, iCount, 2500, 100);
+    Sparkle(11, iCount, 2750, 100);
+    Sparkle(12, iCount, 3000, 100);
+    LedFade(0, 105, 0, 20, 0, 100,
+            //LedNumber,TimerCount,TimerStart,TimerDuration
+            0, iCount, 4000, 500);
+    LedFade(0, 105, 0, 20, 0, 100,
+            1, iCount, 5000, 500);
+    LedFade(0, 105, 0, 20, 0, 100,
+            2, iCount, 6000, 500);
+    LedFade(0, 105, 0, 20, 0, 100,
+            3, iCount, 7000, 500);
+    LedFade(0, 105, 0, 20, 0, 100,
+            4, iCount, 80000, 500);
+    LedFade(0, 105, 0, 20, 0, 100,
+            5, iCount, 9000, 500);
+    LedFade(0, 105, 0, 20, 0, 100,
+            6, iCount, 10000, 500);
+    LedFade(0, 105, 0, 20, 0, 100,
+            7, iCount, 9000, 500);
+    LedFade(0, 105, 0, 20, 0, 100,
+            8, iCount, 8000, 500);
+    LedFade(0, 105, 0, 20, 0, 100,
+            9, iCount, 7000, 500);
+    LedFade(0, 105, 0, 20, 0, 100,
+            10, iCount, 6000, 500);
+    LedFade(0, 105, 0, 20, 0, 100,
+            11, iCount, 5000, 500);
+    LedFade(0, 105, 0, 20, 0, 100,
+            12, iCount, 4000, 500);
+
+    LedFade(105, 51, 20, 102, 100, 0,
+            //LedNumber,TimerCount,TimerStart,TimerDuration
+            0, iCount, 17000, 500);
+    LedFade(105, 51, 20, 102, 100, 0,
+            1, iCount, 16000, 500);
+    LedFade(105, 51, 20, 102, 100, 0,
+            2, iCount, 15000, 500);
+    LedFade(105, 51, 20, 102, 100, 0,
+            3, iCount, 14000, 500);
+    LedFade(105, 51, 20, 102, 100, 0,
+            4, iCount, 13000, 500);
+    LedFade(105, 51, 20, 102, 100, 0,
+            5, iCount, 12000, 500);
+    LedFade(105, 51, 20, 102, 100, 0,
+            6, iCount, 11000, 500);
+    LedFade(105, 51, 20, 102, 100, 0,
+            7, iCount, 12000, 500);
+    LedFade(105, 51, 20, 102, 100, 0,
+            8, iCount, 13000, 500);
+    LedFade(105, 51, 20, 102, 100, 0,
+            9, iCount, 14000, 500);
+    LedFade(105, 51, 20, 102, 100, 0,
+            10, iCount, 15000, 500);
+    LedFade(105, 51, 20, 102, 100, 0,
+            11, iCount, 16000, 500);
+    LedFade(105, 51, 20, 102, 100, 0,
+            12, iCount, 17000, 500);
     for (int iNeoNum = 0; iNeoNum < NUM_PIXELS; iNeoNum++)
     {
       switch (iNeoNum)
       {
-        case 0:
-          if (iCount == 250)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(255, 0, 0));
-            bLedSet[iNeoNum] = true;
-          }
-          else if (iCount == 500)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 255, 0));
-          }
-          else if (iCount == 750)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 0, 255));
-          }
-          else if (iCount == 1000)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 0, 0));
-          }
-          break;
-        case 1:
-          if (iCount == 1000)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(255, 0, 0));
-          }
-          else if (iCount == 1250)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 255, 0));
-          }
-          else if (iCount == 1500)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 0, 255));
-          }
-          else if (iCount == 1750)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 0, 0));
-          }
-          break;
-        case 2:
-          if (iCount == 1750)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(255, 0, 0));
-          }
-          else if (iCount == 2000)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 255, 0));
-          }
-          else if (iCount == 2250)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 0, 255));
-          }
-          else if (iCount == 2500)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 0, 0));
-          }
-          break;
-        case 3:
-          if (iCount == 2500)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(255, 0, 0));
-          }
-          else if (iCount == 2750)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 255, 0));
-          }
-          else if (iCount == 3000)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 0, 255));
-          }
-          else if (iCount == 3250)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 0, 0));
-          }
-          break;
-        case 4:
-          if (iCount == 3250)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(255, 0, 0));
-          }
-          else if (iCount == 3500)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 255, 0));
-          }
-          else if (iCount == 3750)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 0, 255));
-          }
-          else if (iCount == 4000)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 0, 0));
-          }
-          break;
-        case 5:
-          if (iCount == 4000)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(255, 0, 0));
-          }
-          else if (iCount == 4250)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 255, 0));
-          }
-          else if (iCount == 4500)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 0, 255));
-          }
-          else if (iCount == 4750)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 0, 0));
-          }
-          break;
-        case 6:
-          if (iCount == 4750)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(255, 0, 0));
-          }
-          else if (iCount == 5000)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 255, 0));
-          }
-          else if (iCount == 5250)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 0, 255));
-          }
-          else if (iCount == 5500)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 0, 0));
-          }
-          break;
-        case 7:
-          if (iCount == 5500)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(255, 0, 0));
-          }
-          else if (iCount == 5750)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 255, 0));
-          }
-          else if (iCount == 6000)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 0, 255));
-          }
-          else if (iCount == 6250)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 0, 0));
-          }
-          break;
-        case 8:
-          if (iCount == 6250)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(255, 0, 0));
-          }
-          else if (iCount == 6500)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 255, 0));
-          }
-          else if (iCount == 6750)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 0, 255));
-          }
-          else if (iCount == 7000)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 0, 0));
-          }
-          break;
-        case 9:
-          if (iCount == 7000)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(255, 0, 0));
-          }
-          else if (iCount == 7250)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 255, 0));
-          }
-          else if (iCount == 7500)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 0, 255));
-          }
-          else if (iCount == 7750)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 0, 0));
-          }
-          break;
-        case 10:
-          if (iCount == 7750)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(255, 0, 0));
-          }
-          else if (iCount == 8000)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 255, 0));
-          }
-          else if (iCount == 8250)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 0, 255));
-          }
-          else if (iCount == 8500)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 0, 0));
-          }
-          break;
-        case 11:
-          if (iCount == 8500)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(255, 0, 0));
-          }
-          else if (iCount == 8750)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 255, 0));
-          }
-          else if (iCount == 9000)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 0, 255));
-          }
-          else if (iCount == 9250)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 0, 0));
-          }
-          break;
-        case 12:
-          if (iCount == 9250)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(255, 0, 0));
-          }
-          else if (iCount == 9500)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 255, 0));
-          }
-          else if (iCount == 9750)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 0, 255));
-          }
-          else if (iCount == 9999)
-          {
-            pixels.setPixelColor(iNeoNum, pixels.Color(0, 0, 0));
-          }
-          break;
+
         // Start House Light First Floor**********************************************************
         case 13:
           if (iCount % iDelay[iNeoNum] == 0)
@@ -448,10 +284,96 @@ void loop()
               bLedSet[iNeoNum] = false;
             }
           }
-          break;
+          pixels.show();
+          delay(1); //ms
       }
     }
-    pixels.show();
-    delay(1); //ms
   }
+}
+
+void  LedFade(int iRedstart, int iRedstop, int iGrnStrt, int iGrnStop, int iBlueStart, int iBlueStop, int iNeoNum, int iCurrentTime, int iTimeStart, int iTimeDuration)
+{
+  if (iCurrentTime >= iTimeStart && iCurrentTime <= (iTimeStart + iTimeDuration))
+  {
+    //   Serial.println(iCurrentTime);
+    if (iTimeDuration != 0)
+    {
+      double dRedStep = double(double(abs(iRedstop - iRedstart)) / iTimeDuration);
+      double dGreenStep = double(double(abs(iGrnStop - iGrnStrt)) / iTimeDuration);
+      //Serial.println(dGreenStep);
+      double dBlueStep = double(double(abs(iBlueStop - iBlueStart)) / iTimeDuration);
+      //Serial.println(dBlueStep);
+      int iRed;
+      int iGreen;
+      int iBlue;
+      if (iRedstop >= iRedstart)
+      {
+        iRed = iRedstart + ((iCurrentTime - iTimeStart) * dRedStep);
+        //    Serial.println(iRed);
+        if (iRed >= iRedstop) {
+          iRed = iRedstop;
+        }
+      }
+      else
+      {
+        iRed = iRedstart - ((iCurrentTime - iTimeStart) * dRedStep);
+        if (iRed <= iRedstop) {
+          iRed = iRedstop;
+        }
+      }
+      if (iGrnStop >= iGrnStrt)
+      {
+        iGreen = iGrnStrt + ((iCurrentTime - iTimeStart) * dGreenStep);
+        if (iGreen >= iGrnStop) {
+          iGreen = iGrnStop;
+        }
+      }
+      else
+      {
+        iGreen = iGrnStrt - ((iCurrentTime - iTimeStart) * dGreenStep);
+        if (iGreen <= iGrnStop) {
+          iGreen = iGrnStop;
+        }
+      }
+      if (iBlueStop >= iBlueStart)
+      {
+        iBlue = iBlueStart + ((iCurrentTime - iTimeStart) * dBlueStep);
+        if (iBlue >= iBlueStop) {
+          iBlue = iBlueStop;
+        }
+      }
+      else
+      {
+        iBlue = iBlueStart - ((iCurrentTime - iTimeStart) * dBlueStep);
+        if (iBlue <= iBlueStop) {
+          iBlue = iBlueStop;
+        }
+      }
+      Serial.println(iRed);
+      Serial.println(iGreen);
+      Serial.println(iBlue);
+      pixels.setPixelColor(iNeoNum, pixels.Color(iRed, iGreen, iBlue));
+    }
+    else
+    {
+      pixels.setPixelColor(iNeoNum, pixels.Color(iRedstop, iGrnStop, iBlueStop));
+    }
+  }
+}
+void  Sparkle(int iNeoNum, int iCount, int iTimeStart, int iTimeDuration)
+{
+  //Redstart,Redstop,GreenStart,GreenStop,BlueStart,BlueStop
+  LedFade(0, 255, 0, 255, 0, 255,
+          //LedNumber,TimerCount,TimerStart,TimerDuration
+          iNeoNum, iCount, iTimeStart + iTimeDuration / 6, iTimeDuration / 6);
+  LedFade(0, 0, 0, 0, 0, 255,
+          iNeoNum, iCount, iTimeStart + ((2 * iTimeDuration) / 6), iTimeDuration / 6);
+  LedFade(0, 0, 0, 0, 0, 0,
+          iNeoNum, iCount, iTimeStart + ((3 * iTimeDuration) / 6), iTimeDuration / 6);
+  LedFade(0, 255, 0, 255, 0, 255,
+          iNeoNum, iCount, iTimeStart + ((4 * iTimeDuration) / 6), iTimeDuration / 6);
+  LedFade(0, 0, 0, 0, 0, 255,
+          iNeoNum, iCount, iTimeStart + ((5 * iTimeDuration) / 6), iTimeDuration / 6);
+  LedFade(0, 0, 0, 0, 0, 0,
+          iNeoNum, iCount, iTimeStart + ((6 * iTimeDuration) / 6), iTimeDuration / 6);
 }
