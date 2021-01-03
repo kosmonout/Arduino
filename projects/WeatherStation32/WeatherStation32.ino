@@ -38,10 +38,10 @@ portMUX_TYPE InteruptMux = portMUX_INITIALIZER_UNLOCKED;
 #define SSID "kosmos"
 #define PASSWORD "funhouse"
 #define INCOMMING_SERVER "http://192.168.2.165/api/app/com.internet/weather"
-#define MQTT_SERVER "m23.cloudmqtt.com"
-#define MQTT_PORT 17768
-#define MQTT_USERNAME   "nzubqmrm"
-#define MQTT_KEY        "QQiE_DzdaWEu"
+#define MQTT_SERVER "192.168.2.50"
+#define MQTT_PORT 1883
+#define MQTT_USERNAME   ""
+#define MQTT_KEY        ""
 
 #define MAXIMUM_MINUTE_LOOP 30
 #define GEIGER_COUNT_STARTS_MINUTE 3

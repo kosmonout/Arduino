@@ -1,23 +1,34 @@
+//Board ESP32 Dev Module
 #include <WiFi.h>
-#include <HTTPClient.h>
-#include <ArduinoJson.h>
+#include <ArduinoMqttClient.h>
 #include <GxEPD2_BW.h>
 #include <GxEPD2_3C.h>
 #include <Fonts/FreeMonoBold9pt7b.h>
 #define EPD_CS SS
 GxEPD2_BW<GxEPD2_213_B73, GxEPD2_213_B73::HEIGHT> display(GxEPD2_213_B73(/*CS=5*/ SS, /*DC=*/ 17, /*RST=*/ 16, /*BUSY=*/ 4)); // GDEH0213B73
-#include <StreamString.h>
-#define PrintString StreamString
-#define INCOMMING_SERVER "http://192.168.2.165/api/app/com.internet/garage"
-const int port = 80;
 const char* ssid = "kosmos";
 const char* password = "funhouse";
+const char broker[] = "192.168.2.50";
+int        port     = 1883;
+const char topic[]  = "Temperature";
 bool WIFIconnected = false;
-bool ClientConnected = false;
-String sJSONreceiveCommand;
-String sJSONsendCommand;
+bool MQTTconnected = false;
+String Temperature;
+String Humidity;
+String Pressure;
+String LightLux;
+String WindDirection;
+String WindAngle;
+String WindSpeed;
+String Rain;
+String Alarm;
+String Rad_CPM;
+String Rad_usv;
+String PM2_5;
+String PM10;
+
 WiFiClient client;
-WiFiServer server(port);
+MqttClient mqttClient(client);
 
 void setup()
 {
@@ -27,13 +38,14 @@ void setup()
   delay(100);
   display.init(115200);
   display.setPartialWindow(0, 0, display.width(), display.height());
-    int16_t tbx, tby; uint16_t tbw, tbh;
+  int16_t tbx, tby; uint16_t tbw, tbh;
   display.getTextBounds("Start up", 5, 20, &tbx, &tby, &tbw, &tbh);
   display.setPartialWindow(tbx - 2, tby + 2, display.width(), tbh + 2);
   PrintText("Start up1", &FreeMonoBold9pt7b, 5, 20);
   WiFi.disconnect();
   WiFi.begin(ssid, password);
   WIFIconnected = false;
+  MQTTconnected = false;
   display.getTextBounds("Wifi Started", 5, 20, &tbx, &tby, &tbw, &tbh);
   display.setPartialWindow(tbx - 2, tby + 2, display.width(), tbh + 2);
   PrintText("Wifi Started", &FreeMonoBold9pt7b, 5, 20);
@@ -41,7 +53,6 @@ void setup()
 
 void loop()
 {
-  String sParsedJSON;
   // Check if module is still connected to WiFi.
   if (WiFi.status() != WL_CONNECTED)
   {
@@ -51,10 +62,11 @@ void loop()
       display.getTextBounds("Wifi disconnected.", 5, 20, &tbx, &tby, &tbw, &tbh);
       display.setPartialWindow(tbx - 2, tby + 2, display.width(), tbh + 2);
       PrintText("Wifi disconnected.", &FreeMonoBold9pt7b, 5, 20);
+      delay(2000);
       //Serial.println("Wifi disconnected");
-      server.close();
     }
     WIFIconnected = false;
+    MQTTconnected = false;
   }
   else
   {
@@ -63,75 +75,66 @@ void loop()
       int16_t tbx, tby; uint16_t tbw, tbh;
       display.getTextBounds("Wifi Connected.", 5, 20, &tbx, &tby, &tbw, &tbh);
       display.setPartialWindow(tbx - 2, tby + 2, display.width(), tbh + 2);
-      PrintText("Wifi "+WiFi.localIP().toString(), &FreeMonoBold9pt7b, 5, 20);
-      server.begin();
+      PrintText("Wifi " + WiFi.localIP().toString(), &FreeMonoBold9pt7b, 5, 20);
       WIFIconnected = true;
     }
-    WiFiClient client = server.available();
-
-    if (client)
+  }
+  
+  if (WIFIconnected)
+  {
+    if (MQTTconnected == false)
     {
-      int16_t tbx, tby; uint16_t tbw, tbh;
-      display.getTextBounds("Client Comunication.", 5, 20, &tbx, &tby, &tbw, &tbh);
-      display.setPartialWindow(tbx - 2, tby + 2, display.width(), tbh + 2);
-      PrintText("Client Comunication.", &FreeMonoBold9pt7b, 5, 20);
-      bool success = readRequest(client);
-      if (success)
+      Serial.print("Attempting to connect to the MQTT broker: ");
+      Serial.println(broker);
+      if (!mqttClient.connect(broker, port))
       {
-        String line = client.readStringUntil('\r');
-        //Read JSON
-        //Serial.println("line: " + line);
-        if (line.length() > 0)
-        {
-          // Parse JSON
-          int size = line.length() + 1;
-          char jsonChar[size];
-          line.toCharArray(jsonChar, size);
-          StaticJsonBuffer<200> jsonReadBuffer;
-          JsonObject& json_parsed = jsonReadBuffer.parseObject(jsonChar);
-          if (!json_parsed.success())
-          {
-            Serial.println("parseObject() failed");
-            return;
-          }
-          sJSONreceiveCommand = "Unrecognized command";
-          //json_parsed.prettyPrintTo(Serial);
-          String sParsedDOOR = json_parsed["door"];
-          if (sParsedDOOR == "move")
-          {
-            sJSONreceiveCommand = "Rcv: " + sParsedDOOR;
-          }
-          String sParsedGATE  = json_parsed["gate"];
-          if (sParsedGATE == "open")
-          {
-            sJSONreceiveCommand = "Rcv: " + sParsedGATE;
-          }
-          String sParsedLIGHT = json_parsed["light"];
-          if (sParsedLIGHT == "on")
-          {
-            sJSONreceiveCommand = "Rcv: " + sParsedLIGHT;
-          }
-          if (sParsedLIGHT == "off")
-          {
-            sJSONreceiveCommand = "Rcv: " + sParsedLIGHT;
-          }
-          int16_t tbx, tby; uint16_t tbw, tbh;
-          display.getTextBounds(sJSONreceiveCommand, 1, 15, &tbx, &tby, &tbw, &tbh);
-          display.setPartialWindow(tbx - 2, tby + 2, display.width(), tbh + 2);
-          PrintText(sJSONreceiveCommand, &FreeMonoBold9pt7b, 5, 20);
+        Serial.print("MQTT connection failed! Error code = ");
+        Serial.println(mqttClient.connectError());
+        MQTTconnected = false;
+        delay(2000);
+      }
+      else
+      {
+        MQTTconnected = true;
+      }
+      if (MQTTconnected == true)
+      {
+        Serial.println("You're connected to the MQTT broker!");
+        Serial.print("Subscribing to topic: ");
+        Serial.println(topic);
+        // subscribe to a topic
+        mqttClient.subscribe(topic);
+      }
+    }
+
+    if (!mqttClient.connected())
+    {
+      Serial.println("mqtt client not connected");
+      MQTTconnected = false;
+    }
+    else
+    {
+      int messageSize = mqttClient.parseMessage();
+      if (messageSize) 
+      {
+        // we received a message, print out the topic and contents
+        Serial.print("Received a message with topic '");
+        Serial.print(mqttClient.messageTopic());
+        Serial.print("', length ");
+        Serial.print(messageSize);
+        Serial.println(" bytes:");
+
+        // use the Stream interface to print the contents
+        while (mqttClient.available()) {
+          Serial.print((char)mqttClient.read());
         }
-        StaticJsonBuffer<200> jsonWriteBuffer;
-        JsonObject& jsonWrite = prepareResponse(jsonWriteBuffer);
-        writeResponse(client, jsonWrite);
-        ClientConnected = true;
-        delay(1);
-        client.stop();
+        Serial.println();
       }
     }
   }
 }
 
-void PrintText(String sText, const GFXfont *f, int iX, int iY)
+void PrintText(String sText, const GFXfont * f, int iX, int iY)
 {
   display.setFont(f);
   display.setTextColor(GxEPD_BLACK);
@@ -183,61 +186,4 @@ void showBox(uint16_t x, uint16_t y, uint16_t w, uint16_t h)
   }
   while (display.nextPage());
   //Serial.println("showBox done");
-}
-
-bool readRequest(WiFiClient & client) {
-  bool currentLineIsBlank = true;
-  while (client.connected()) {
-    if (client.available()) {
-      char c = client.read();
-      if (c == '\n' && currentLineIsBlank) {
-        //Serial.println("Client Request Confirmed.");
-        return true;
-      } else if (c == '\n') {
-        currentLineIsBlank = true;
-      } else if (c != '\r') {
-        currentLineIsBlank = false;
-      }
-    }
-  }
-  return false;
-}
-
-JsonObject& prepareResponse(JsonBuffer & jsonBuffer)
-{
-  sJSONsendCommand = "Snd Sensor status";
-  JsonObject& root = jsonBuffer.createObject();
-  //  if (GarageDoorActivated)
-  //  {
-  //    root["door"] = "moving";
-  //  }
-  //  else
-  //  {
-  //    if (GarageDoorOpen == false)
-  //    {
-  //      root["door"] = "closed";
-  //    }
-  //    else
-  //    {
-  //      root["door"] = "open";
-  //    }
-  //  }
-  //  if (bLightOn == true)
-  //  {
-  //    root["light"] = "on";
-  //  }
-  //  else
-  //  {
-  //    root["light"] = "off";
-  //  }
-  //  //Serial.println(sJSONsendCommand);
-  return root;
-}
-
-void writeResponse(WiFiClient & client, JsonObject & json) {
-  client.println("HTTP/1.1 200 OK");
-  client.println("Content-Type: application/json");
-  client.println("Connection: close");
-  client.println();
-  json.prettyPrintTo(client);
 }
